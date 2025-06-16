@@ -56,14 +56,14 @@ export default function TabTwoScreen() {
     );
   
     setInputValue('');
-    await fetchItems(); // 👈 Refresh item list after insert
+    await fetchItems();
   };
   
 
   const fetchItems = async () => {
     const db = await SQLite.openDatabaseAsync('mydb.db');
     const rows = (await db.getAllAsync('SELECT * FROM test')) as TestRow[];
-    setItems(rows); // Update state
+    setItems(rows);
   };
   
 
