@@ -12,6 +12,10 @@ type Item = {
 export default function ItemScreen() {
   const [inputValue, setInputValue] = useState('');
   const [items, setItems] = useState<Item[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+const [editedName, setEditedName] = useState('');
+
 
   useEffect(() => {
     const initDb = async () => {
@@ -51,6 +55,24 @@ export default function ItemScreen() {
     const result = await db.getAllAsync('SELECT * FROM items');
     console.log("Items in DB:", result);
   };
+
+  const toggleEditMode = () => {
+    setIsEditing((prev) => !prev);
+    setSelectedItemId(null);
+    setEditedName('');
+  };
+  
+  const updateItem = async () => {
+    if (!editedName.trim() || selectedItemId === null) return;
+  
+    const db = await SQLite.openDatabaseAsync('mydb.db');
+    await db.runAsync('UPDATE items SET name = ? WHERE id = ?', editedName.trim(), selectedItemId);
+  
+    setSelectedItemId(null);
+    setEditedName('');
+    fetchItems();
+  };
+  
   
 
   return (
@@ -66,6 +88,8 @@ export default function ItemScreen() {
 
       <Button title="➕ Add Item" onPress={addItem} />
       <Button title="📤 Export DB" onPress={debugPrintItems} />
+      <Button title={isEditing ? '✅ Save Changes' : '✏️ Edit Items'} onPress={isEditing ? updateItem : toggleEditMode} />
+
 
       <FlatList
         data={items}
@@ -73,7 +97,30 @@ export default function ItemScreen() {
         style={styles.list}
         renderItem={({ item }) => (
           <View style={styles.itemBox}>
-            <Text style={styles.itemText}>📝 {item.name}</Text>
+            {isEditing && selectedItemId === item.id ? (
+        <>
+          <TextInput
+            style={styles.input}
+            value={editedName}
+            onChangeText={setEditedName}
+            placeholder="Edit name"
+          />
+          <Button title="💾 Save" onPress={updateItem} />
+        </>
+      ) : (
+        <>
+          <Text style={styles.itemText}>📝 {item.name}</Text>
+          {isEditing && (
+            <Button
+              title="✏️"
+              onPress={() => {
+                setSelectedItemId(item.id);
+                setEditedName(item.name);
+              }}
+            />
+          )}
+        </>
+      )}
           </View>
         )}
       />
