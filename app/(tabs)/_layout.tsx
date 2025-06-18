@@ -41,7 +41,7 @@ export default function TabLayout() {
         options={{
           title: "Items",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="fork.knife" color={color} />
           ),
         }}
       />
@@ -50,7 +50,7 @@ export default function TabLayout() {
         options={{
           title: "Users",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="person.fill.badge.plus" color={color} />
           ),
         }}
       />
@@ -59,7 +59,16 @@ export default function TabLayout() {
         options={{
           title: "Take Order",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="square.and.pencil" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="itemSummary"
+        options={{
+          title: "Order Summary",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="doc.text.fill" color={color} />
           ),
         }}
       />
