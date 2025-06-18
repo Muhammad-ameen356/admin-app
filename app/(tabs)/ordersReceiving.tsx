@@ -1,7 +1,8 @@
 import { dbName } from "@/constants/constants";
 import { Picker } from "@react-native-picker/picker";
+import { useFocusEffect } from "@react-navigation/native";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Button,
@@ -34,37 +35,16 @@ export default function TakeOrderScreen() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      db = await openDatabaseAsync(dbName);
-
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS orders (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          date TEXT DEFAULT (DATE('now')),
-          total_amount INTEGER,
-          paid_amount INTEGER,
-          FOREIGN KEY(user_id) REFERENCES users(id)
-        );
-      `);
-
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS order_items (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          order_id INTEGER,
-          item_id INTEGER,
-          quantity INTEGER NOT NULL,
-          FOREIGN KEY(order_id) REFERENCES orders(id),
-          FOREIGN KEY(item_id) REFERENCES items(id)
-        );
-      `);
-
-      await loadUsers();
-      await loadItems();
-      await loadOrders();
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        db = await openDatabaseAsync(dbName);
+        await loadUsers();
+        await loadItems();
+        await loadOrders();
+      })();
+    }, [])
+  );
 
   useEffect(() => {
     calculateTotal();

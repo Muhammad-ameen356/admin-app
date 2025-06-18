@@ -33,13 +33,6 @@ export default function UserCrudScreen() {
     (async () => {
       db = await openDatabaseAsync(dbName);
 
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          employeeId INTEGER NOT NULL
-        );
-      `);
       await loadUsers();
     })();
   }, []);
