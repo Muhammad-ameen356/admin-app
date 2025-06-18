@@ -141,11 +141,6 @@ export default function TakeOrderScreen() {
 
     const paid = parseInt(paidAmount) || 0;
 
-    if (paid > totalAmount) {
-      Alert.alert("Paid amount cannot exceed total amount");
-      return;
-    }
-
     try {
       const date = new Date().toISOString().split("T")[0];
 
@@ -250,22 +245,27 @@ export default function TakeOrderScreen() {
         <Text>No orders yet.</Text>
       ) : (
         orders.map((order) => {
-          const remaining = order.total_amount - order.paid_amount;
+          const diff = order.paid_amount - order.total_amount;
+
+          let statusText = "Paid in full";
+          let statusColor = "green";
+
+          if (diff < 0) {
+            statusText = `Remaining: Rs ${Math.abs(diff)}`;
+            statusColor = "red";
+          } else if (diff > 0) {
+            statusText = `You have: Rs ${diff} balance`;
+            statusColor = "orange";
+          }
+
           return (
             <View key={order.id} style={styles.orderItem}>
               <Text style={styles.orderText}>
                 👤 {order.userName} - Rs {order.total_amount} (Paid: Rs{" "}
                 {order.paid_amount})
               </Text>
-              <Text
-                style={{
-                  color: remaining === 0 ? "green" : "red",
-                  fontWeight: "bold",
-                }}
-              >
-                {remaining === 0
-                  ? "Paid in full"
-                  : `Remaining: Rs ${remaining}`}
+              <Text style={{ color: statusColor, fontWeight: "bold" }}>
+                {statusText}
               </Text>
             </View>
           );
