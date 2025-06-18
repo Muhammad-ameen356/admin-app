@@ -1,38 +1,37 @@
 import { dbName } from "@/constants/constants";
-import { Picker } from "@react-native-picker/picker";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
   Button,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
+
+let db: SQLiteDatabase;
 
 type User = { id: number; name: string; employeeId: number };
 type Item = { id: number; name: string; amount: number };
-
-type OrderItemInput = {
-  itemId: number | null;
-  quantity: number;
-};
-
-let db: SQLiteDatabase;
+type OrderItemInput = { itemId: number | null; quantity: number; dropdownOpen?: boolean };
 
 export default function TakeOrderScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [orderItems, setOrderItems] = useState<OrderItemInput[]>([
-    { itemId: null, quantity: 1 },
-  ]);
+  const [orderItems, setOrderItems] = useState<OrderItemInput[]>([{
+    itemId: null,
+    quantity: 1,
+    dropdownOpen: false
+  }]);
   const [paidAmount, setPaidAmount] = useState("");
   const [totalAmount, setTotalAmount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -101,22 +100,14 @@ export default function TakeOrderScreen() {
     setTotalAmount(total);
   };
 
-  const handleItemChange = (
-    index: number,
-    field: "itemId" | "quantity",
-    value: any
-  ) => {
+  const handleItemChange = (index: number, field: "itemId" | "quantity", value: any) => {
     const updated = [...orderItems];
-    if (field === "quantity") {
-      updated[index][field] = parseInt(value) || 1;
-    } else {
-      updated[index][field] = value;
-    }
+    updated[index][field] = field === "quantity" ? parseInt(value) || 1 : value;
     setOrderItems(updated);
   };
 
   const addOrderItem = () => {
-    setOrderItems([...orderItems, { itemId: null, quantity: 1 }]);
+    setOrderItems([...orderItems, { itemId: null, quantity: 1, dropdownOpen: false }]);
   };
 
   const removeOrderItem = (index: number) => {
@@ -126,29 +117,15 @@ export default function TakeOrderScreen() {
   };
 
   const handleSaveOrder = async () => {
-    if (!selectedUserId) {
-      Alert.alert("Select User");
-      return;
-    }
-
-    if (
-      orderItems.length === 0 ||
-      orderItems.some((item) => item.itemId === null)
-    ) {
-      Alert.alert("Select at least one valid item");
-      return;
-    }
+    if (!selectedUserId) return Alert.alert("Select User");
+    if (orderItems.length === 0 || orderItems.some((item) => item.itemId === null))
+      return Alert.alert("Select at least one valid item");
 
     const paid = parseInt(paidAmount) || 0;
-
-    if (paid > totalAmount) {
-      Alert.alert("Paid amount cannot exceed total amount");
-      return;
-    }
+    if (paid > totalAmount) return Alert.alert("Paid amount cannot exceed total amount");
 
     try {
       const date = new Date().toISOString().split("T")[0];
-
       const result = await db.runAsync(
         "INSERT INTO orders (user_id, date, total_amount, paid_amount) VALUES (?, ?, ?, ?)",
         [selectedUserId, date, totalAmount, paid]
@@ -174,45 +151,72 @@ export default function TakeOrderScreen() {
 
   const resetForm = () => {
     setSelectedUserId(null);
-    setOrderItems([{ itemId: null, quantity: 1 }]);
+    setOrderItems([{ itemId: null, quantity: 1, dropdownOpen: false }]);
     setPaidAmount("");
     setTotalAmount(0);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>Take Order</Text>
-
+  
       <Text style={styles.label}>Select User</Text>
-      <Picker
-        selectedValue={selectedUserId}
-        onValueChange={(value) => setSelectedUserId(value)}
-        style={styles.picker}
-      >
-        <Picker.Item label="-- Select User --" value={null} />
-        {users.map((user) => (
-          <Picker.Item key={user.id} label={`${user.name}`} value={user.id} />
-        ))}
-      </Picker>
-
+      <View style={{ zIndex: 3000 }}>
+        <DropDownPicker
+          open={userDropdownOpen}
+          value={selectedUserId}
+          items={[
+            { label: "-- Select User --", value: undefined },
+            ...users.map((user) => ({
+              label: user.name,
+              value: user.id,
+              key: `user-${user.id}`,
+            })),
+          ]}
+          setOpen={setUserDropdownOpen}
+          setValue={setSelectedUserId}
+          placeholder="Select User"
+          searchable={true}
+          zIndex={3000}
+          zIndexInverse={1000}
+        />
+      </View>
+  
       <Text style={styles.label}>Items</Text>
       {orderItems.map((item, index) => (
-        <View key={index} style={styles.itemRow}>
-          <Picker
-            selectedValue={item.itemId}
-            onValueChange={(value) => handleItemChange(index, "itemId", value)}
-            style={[styles.picker, { flex: 1 }]}
-          >
-            <Picker.Item label="Select Item" value={null} />
-            {items.map((i) => (
-              <Picker.Item
-                key={i.id}
-                label={`${i.name} - Rs ${i.amount}`}
-                value={i.id}
-              />
-            ))}
-          </Picker>
-
+        <View
+          key={`${index}-${item.itemId ?? "null"}`}
+          style={[styles.itemRow, { zIndex: 2000 - index }]}
+        >
+          <View style={{ flex: 1 }}>
+            <DropDownPicker
+              open={item.dropdownOpen || false}
+              value={item.itemId}
+              items={items.map((i) => ({
+                label: `${i.name} - Rs ${i.amount}`,
+                value: i.id,
+                key: `item-${i.id}`,
+              }))}
+              setOpen={(open) => {
+                const updated = [...orderItems];
+                updated[index].dropdownOpen = open;
+                setOrderItems(updated);
+              }}
+              setValue={(callback) => {
+                const updated = [...orderItems];
+                const newValue = callback(item.itemId);
+                updated[index].itemId = newValue;
+                setOrderItems(updated);
+              }}
+              placeholder="Select Item"
+              searchable={true}
+              zIndex={2000 - index}
+              zIndexInverse={4000 + index}
+              style={{ flex: 1 }}
+              dropDownContainerStyle={{ width: "80%" }}
+            />
+          </View>
+  
           <TextInput
             style={[styles.input, { width: 80, marginLeft: 10 }]}
             placeholder="Qty"
@@ -220,7 +224,7 @@ export default function TakeOrderScreen() {
             value={item.quantity.toString()}
             onChangeText={(val) => handleItemChange(index, "quantity", val)}
           />
-
+  
           {index > 0 && (
             <TouchableOpacity onPress={() => removeOrderItem(index)}>
               <Text style={styles.remove}>✕</Text>
@@ -228,13 +232,13 @@ export default function TakeOrderScreen() {
           )}
         </View>
       ))}
-
+  
       <TouchableOpacity onPress={addOrderItem} style={styles.addButton}>
         <Text style={styles.addButtonText}>+ Add Item</Text>
       </TouchableOpacity>
-
+  
       <Text style={styles.total}>Total: Rs {totalAmount}</Text>
-
+  
       <TextInput
         style={styles.input}
         placeholder="Paid Amount"
@@ -242,20 +246,20 @@ export default function TakeOrderScreen() {
         value={paidAmount}
         onChangeText={setPaidAmount}
       />
-
+  
       <Button title="Save Order" onPress={handleSaveOrder} />
-
-      <Text style={[styles.title, { marginTop: 30 }]}>Today's Orders</Text>
-      {orders.length === 0 ? (
-        <Text>No orders yet.</Text>
-      ) : (
-        orders.map((order) => {
-          const remaining = order.total_amount - order.paid_amount;
+  
+      <Text style={[styles.title, { marginTop: 30 }]}>Todays Orders</Text>
+      <FlatList
+        data={orders}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => {
+          const remaining = item.total_amount - item.paid_amount;
           return (
-            <View key={order.id} style={styles.orderItem}>
+            <View style={styles.orderItem}>
               <Text style={styles.orderText}>
-                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs{" "}
-                {order.paid_amount})
+                👤 {item.userName} - Rs {item.total_amount} (Paid: Rs{" "}
+                {item.paid_amount})
               </Text>
               <Text
                 style={{
@@ -269,10 +273,12 @@ export default function TakeOrderScreen() {
               </Text>
             </View>
           );
-        })
-      )}
-    </ScrollView>
+        }}
+        ListEmptyComponent={<Text>No orders yet.</Text>}
+      />
+    </View>
   );
+  
 }
 
 const styles = StyleSheet.create({
