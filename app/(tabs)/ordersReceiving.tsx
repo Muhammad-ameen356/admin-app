@@ -5,7 +5,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Button,
-  FlatList,
   StyleSheet,
   Text,
   TextInput,
@@ -13,22 +12,25 @@ import {
   View,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 let db: SQLiteDatabase;
 
 type User = { id: number; name: string; employeeId: number };
 type Item = { id: number; name: string; amount: number };
-type OrderItemInput = { itemId: number | null; quantity: number; dropdownOpen?: boolean };
+type OrderItemInput = {
+  itemId: number | null;
+  quantity: number;
+  dropdownOpen?: boolean;
+};
 
 export default function TakeOrderScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [orderItems, setOrderItems] = useState<OrderItemInput[]>([{
-    itemId: null,
-    quantity: 1,
-    dropdownOpen: false
-  }]);
+  const [orderItems, setOrderItems] = useState<OrderItemInput[]>([
+    { itemId: null, quantity: 1, dropdownOpen: false },
+  ]);
   const [paidAmount, setPaidAmount] = useState("");
   const [totalAmount, setTotalAmount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
@@ -80,14 +82,21 @@ export default function TakeOrderScreen() {
     setTotalAmount(total);
   };
 
-  const handleItemChange = (index: number, field: "itemId" | "quantity", value: any) => {
+  const handleItemChange = (
+    index: number,
+    field: "itemId" | "quantity",
+    value: any
+  ) => {
     const updated = [...orderItems];
     updated[index][field] = field === "quantity" ? parseInt(value) || 1 : value;
     setOrderItems(updated);
   };
 
   const addOrderItem = () => {
-    setOrderItems([...orderItems, { itemId: null, quantity: 1, dropdownOpen: false }]);
+    setOrderItems([
+      ...orderItems,
+      { itemId: null, quantity: 1, dropdownOpen: false },
+    ]);
   };
 
   const removeOrderItem = (index: number) => {
@@ -98,11 +107,13 @@ export default function TakeOrderScreen() {
 
   const handleSaveOrder = async () => {
     if (!selectedUserId) return Alert.alert("Select User");
-    if (orderItems.length === 0 || orderItems.some((item) => item.itemId === null))
+    if (
+      orderItems.length === 0 ||
+      orderItems.some((item) => item.itemId === null)
+    )
       return Alert.alert("Select at least one valid item");
 
     const paid = parseInt(paidAmount) || 0;
-    if (paid > totalAmount) return Alert.alert("Paid amount cannot exceed total amount");
 
     try {
       const date = new Date().toISOString().split("T")[0];
@@ -137,9 +148,14 @@ export default function TakeOrderScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      extraScrollHeight={100}
+      enableOnAndroid
+    >
       <Text style={styles.title}>Take Order</Text>
-  
+
       <Text style={styles.label}>Select User</Text>
       <View style={{ zIndex: 3000 }}>
         <DropDownPicker
@@ -161,7 +177,7 @@ export default function TakeOrderScreen() {
           zIndexInverse={1000}
         />
       </View>
-  
+
       <Text style={styles.label}>Items</Text>
       {orderItems.map((item, index) => (
         <View
@@ -196,7 +212,7 @@ export default function TakeOrderScreen() {
               dropDownContainerStyle={{ width: "80%" }}
             />
           </View>
-  
+
           <TextInput
             style={[styles.input, { width: 80, marginLeft: 10 }]}
             placeholder="Qty"
@@ -204,7 +220,7 @@ export default function TakeOrderScreen() {
             value={item.quantity.toString()}
             onChangeText={(val) => handleItemChange(index, "quantity", val)}
           />
-  
+
           {index > 0 && (
             <TouchableOpacity onPress={() => removeOrderItem(index)}>
               <Text style={styles.remove}>✕</Text>
@@ -212,13 +228,13 @@ export default function TakeOrderScreen() {
           )}
         </View>
       ))}
-  
+
       <TouchableOpacity onPress={addOrderItem} style={styles.addButton}>
         <Text style={styles.addButtonText}>+ Add Item</Text>
       </TouchableOpacity>
-  
+
       <Text style={styles.total}>Total: Rs {totalAmount}</Text>
-  
+
       <TextInput
         style={styles.input}
         placeholder="Paid Amount"
@@ -226,23 +242,14 @@ export default function TakeOrderScreen() {
         value={paidAmount}
         onChangeText={setPaidAmount}
       />
-  
-      <Button title="Save Order" onPress={handleSaveOrder} />
-  
-      <Text style={[styles.title, { marginTop: 30 }]}>Todays Orders</Text>
-      <FlatList
-        data={orders}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => {
-          const remaining = item.total_amount - item.paid_amount;
 
-      <Text style={[styles.title, { marginTop: 30 }]}>Today's Orders</Text>
+      <Button title="Save Order" onPress={handleSaveOrder} />
+
       {orders.length === 0 ? (
         <Text>No orders yet.</Text>
       ) : (
         orders.map((order) => {
           const diff = order.paid_amount - order.total_amount;
-
           let statusText = "Paid in full";
           let statusColor = "green";
 
@@ -255,34 +262,26 @@ export default function TakeOrderScreen() {
           }
 
           return (
-            <View style={styles.orderItem}>
+            <View key={order.id} style={styles.orderItem}>
               <Text style={styles.orderText}>
-                👤 {item.userName} - Rs {item.total_amount} (Paid: Rs{" "}
-                {item.paid_amount})
+                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs{" "}
+                {order.paid_amount})
               </Text>
               <Text style={{ color: statusColor, fontWeight: "bold" }}>
                 {statusText}
               </Text>
             </View>
           );
-        }}
-        ListEmptyComponent={<Text>No orders yet.</Text>}
-      />
-    </View>
+        })
+      )}
+    </KeyboardAwareScrollView>
   );
-  
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
+  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
   label: { fontSize: 16, fontWeight: "600", marginTop: 15 },
-  picker: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 10,
-    backgroundColor: "#f9f9f9",
-  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
