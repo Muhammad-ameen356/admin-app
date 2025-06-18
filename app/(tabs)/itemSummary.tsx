@@ -4,12 +4,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
-    Button,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Button,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 let db: SQLiteDatabase;
@@ -22,7 +22,9 @@ export default function OrderSummaryScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        db = await openDatabaseAsync(dbName);
+        db = await openDatabaseAsync(dbName, {
+          useNewConnection: true,
+        });
         fetchSummary(selectedDate);
       })();
     }, [])

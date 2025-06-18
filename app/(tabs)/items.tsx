@@ -30,7 +30,9 @@ export default function ItemScreen() {
 
   useEffect(() => {
     (async () => {
-      db = await openDatabaseAsync(dbName);
+      db = await openDatabaseAsync(dbName, {
+        useNewConnection: true,
+      });
       await loadItems();
     })();
   }, []);

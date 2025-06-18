@@ -1,44 +1,45 @@
 import { dbName } from "@/constants/constants";
-import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect } from "@react-navigation/native";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Button,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
+let db: SQLiteDatabase;
 
 type User = { id: number; name: string; employeeId: number };
 type Item = { id: number; name: string; amount: number };
-
 type OrderItemInput = {
   itemId: number | null;
   quantity: number;
+  dropdownOpen?: boolean;
 };
-
-let db: SQLiteDatabase;
 
 export default function TakeOrderScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItemInput[]>([
-    { itemId: null, quantity: 1 },
+    { itemId: null, quantity: 1, dropdownOpen: false },
   ]);
   const [paidAmount, setPaidAmount] = useState("");
   const [totalAmount, setTotalAmount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        db = await openDatabaseAsync(dbName);
+        db = await openDatabaseAsync(dbName, { useNewConnection: true });
         await loadUsers();
         await loadItems();
         await loadOrders();
@@ -87,16 +88,15 @@ export default function TakeOrderScreen() {
     value: any
   ) => {
     const updated = [...orderItems];
-    if (field === "quantity") {
-      updated[index][field] = parseInt(value) || 1;
-    } else {
-      updated[index][field] = value;
-    }
+    updated[index][field] = field === "quantity" ? parseInt(value) || 1 : value;
     setOrderItems(updated);
   };
 
   const addOrderItem = () => {
-    setOrderItems([...orderItems, { itemId: null, quantity: 1 }]);
+    setOrderItems([
+      ...orderItems,
+      { itemId: null, quantity: 1, dropdownOpen: false },
+    ]);
   };
 
   const removeOrderItem = (index: number) => {
@@ -106,24 +106,17 @@ export default function TakeOrderScreen() {
   };
 
   const handleSaveOrder = async () => {
-    if (!selectedUserId) {
-      Alert.alert("Select User");
-      return;
-    }
-
+    if (!selectedUserId) return Alert.alert("Select User");
     if (
       orderItems.length === 0 ||
       orderItems.some((item) => item.itemId === null)
-    ) {
-      Alert.alert("Select at least one valid item");
-      return;
-    }
+    )
+      return Alert.alert("Select at least one valid item");
 
     const paid = parseInt(paidAmount) || 0;
 
     try {
       const date = new Date().toISOString().split("T")[0];
-
       const result = await db.runAsync(
         "INSERT INTO orders (user_id, date, total_amount, paid_amount) VALUES (?, ?, ?, ?)",
         [selectedUserId, date, totalAmount, paid]
@@ -149,44 +142,83 @@ export default function TakeOrderScreen() {
 
   const resetForm = () => {
     setSelectedUserId(null);
-    setOrderItems([{ itemId: null, quantity: 1 }]);
+    setOrderItems([{ itemId: null, quantity: 1, dropdownOpen: false }]);
     setPaidAmount("");
     setTotalAmount(0);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      extraScrollHeight={100}
+      enableOnAndroid
+    >
       <Text style={styles.title}>Take Order</Text>
 
       <Text style={styles.label}>Select User</Text>
-      <Picker
-        selectedValue={selectedUserId}
-        onValueChange={(value) => setSelectedUserId(value)}
-        style={styles.picker}
-      >
-        <Picker.Item label="-- Select User --" value={null} />
-        {users.map((user) => (
-          <Picker.Item key={user.id} label={`${user.name}`} value={user.id} />
-        ))}
-      </Picker>
+      <View style={{ zIndex: 3000 }}>
+        <DropDownPicker
+          open={userDropdownOpen}
+          value={selectedUserId}
+          listMode="MODAL"
+          modalTitle="Select a User"
+          items={[
+            { label: "-- Select User --", value: undefined },
+            ...users.map((user, ind) => ({
+              label: user.name,
+              value: user.id,
+              key: `user-${ind}-${user.id}`,
+            })),
+          ]}
+          setOpen={setUserDropdownOpen}
+          setValue={setSelectedUserId}
+          placeholder="Select User"
+          searchable={true}
+          zIndex={3000}
+          zIndexInverse={1000}
+        />
+      </View>
 
       <Text style={styles.label}>Items</Text>
       {orderItems.map((item, index) => (
-        <View key={index} style={styles.itemRow}>
-          <Picker
-            selectedValue={item.itemId}
-            onValueChange={(value) => handleItemChange(index, "itemId", value)}
-            style={[styles.picker, { flex: 1 }]}
-          >
-            <Picker.Item label="Select Item" value={null} />
-            {items.map((i) => (
-              <Picker.Item
-                key={i.id}
-                label={`${i.name} - Rs ${i.amount}`}
-                value={i.id}
-              />
-            ))}
-          </Picker>
+        <View
+          key={`${index}-${item.itemId ?? "null"}`}
+          style={[styles.itemRow, { zIndex: 2000 - index }]}
+        >
+          <View style={{ flex: 1 }}>
+            <DropDownPicker
+              open={item.dropdownOpen || false}
+              value={item.itemId}
+              items={items.map((i, ind) => ({
+                label: `${i.name} - Rs ${i.amount}`,
+                value: i.id,
+                key: `item-${ind}-${i.id}`,
+              }))}
+              listMode="MODAL"
+              modalTitle="Select an item"
+              setOpen={(val) => {
+                const updated = [...orderItems];
+                updated[index].dropdownOpen =
+                  typeof val === "function"
+                    ? val(updated[index].dropdownOpen ?? false)
+                    : val;
+                setOrderItems(updated);
+              }}
+              setValue={(callback) => {
+                const updated = [...orderItems];
+                const newValue = callback(item.itemId);
+                updated[index].itemId = newValue;
+                setOrderItems(updated);
+              }}
+              placeholder="Select Item"
+              searchable={true}
+              zIndex={2000 - index}
+              zIndexInverse={4000 + index}
+              style={{ flex: 1 }}
+              dropDownContainerStyle={{ width: "80%" }}
+            />
+          </View>
 
           <TextInput
             style={[styles.input, { width: 80, marginLeft: 10 }]}
@@ -220,13 +252,11 @@ export default function TakeOrderScreen() {
 
       <Button title="Save Order" onPress={handleSaveOrder} />
 
-      <Text style={[styles.title, { marginTop: 30 }]}>Today's Orders</Text>
       {orders.length === 0 ? (
         <Text>No orders yet.</Text>
       ) : (
         orders.map((order) => {
           const diff = order.paid_amount - order.total_amount;
-
           let statusText = "Paid in full";
           let statusColor = "green";
 
@@ -251,20 +281,14 @@ export default function TakeOrderScreen() {
           );
         })
       )}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
+  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
   label: { fontSize: 16, fontWeight: "600", marginTop: 15 },
-  picker: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 10,
-    backgroundColor: "#f9f9f9",
-  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
