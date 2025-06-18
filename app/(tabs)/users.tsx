@@ -31,7 +31,9 @@ export default function UserCrudScreen() {
 
   useEffect(() => {
     (async () => {
-      db = await openDatabaseAsync(dbName);
+      db = await openDatabaseAsync(dbName, {
+        useNewConnection: true,
+      });
 
       await loadUsers();
     })();

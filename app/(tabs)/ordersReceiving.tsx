@@ -39,7 +39,7 @@ export default function TakeOrderScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        db = await openDatabaseAsync(dbName);
+        db = await openDatabaseAsync(dbName, { useNewConnection: true });
         await loadUsers();
         await loadItems();
         await loadOrders();
@@ -161,12 +161,14 @@ export default function TakeOrderScreen() {
         <DropDownPicker
           open={userDropdownOpen}
           value={selectedUserId}
+          listMode="MODAL"
+          modalTitle="Select a User"
           items={[
             { label: "-- Select User --", value: undefined },
-            ...users.map((user) => ({
+            ...users.map((user, ind) => ({
               label: user.name,
               value: user.id,
-              key: `user-${user.id}`,
+              key: `user-${ind}-${user.id}`,
             })),
           ]}
           setOpen={setUserDropdownOpen}
@@ -188,14 +190,19 @@ export default function TakeOrderScreen() {
             <DropDownPicker
               open={item.dropdownOpen || false}
               value={item.itemId}
-              items={items.map((i) => ({
+              items={items.map((i, ind) => ({
                 label: `${i.name} - Rs ${i.amount}`,
                 value: i.id,
-                key: `item-${i.id}`,
+                key: `item-${ind}-${i.id}`,
               }))}
-              setOpen={(open) => {
+              listMode="MODAL"
+              modalTitle="Select an item"
+              setOpen={(val) => {
                 const updated = [...orderItems];
-                updated[index].dropdownOpen = open;
+                updated[index].dropdownOpen =
+                  typeof val === "function"
+                    ? val(updated[index].dropdownOpen ?? false)
+                    : val;
                 setOrderItems(updated);
               }}
               setValue={(callback) => {
