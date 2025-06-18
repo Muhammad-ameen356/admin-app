@@ -1,6 +1,7 @@
 import { dbName } from "@/constants/constants";
+import { useFocusEffect } from "@react-navigation/native";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Button,
@@ -33,37 +34,16 @@ export default function TakeOrderScreen() {
   const [orders, setOrders] = useState<any[]>([]);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      db = await openDatabaseAsync(dbName);
-
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS orders (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          date TEXT DEFAULT (DATE('now')),
-          total_amount INTEGER,
-          paid_amount INTEGER,
-          FOREIGN KEY(user_id) REFERENCES users(id)
-        );
-      `);
-
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS order_items (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          order_id INTEGER,
-          item_id INTEGER,
-          quantity INTEGER NOT NULL,
-          FOREIGN KEY(order_id) REFERENCES orders(id),
-          FOREIGN KEY(item_id) REFERENCES items(id)
-        );
-      `);
-
-      await loadUsers();
-      await loadItems();
-      await loadOrders();
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        db = await openDatabaseAsync(dbName);
+        await loadUsers();
+        await loadItems();
+        await loadOrders();
+      })();
+    }, [])
+  );
 
   useEffect(() => {
     calculateTotal();
@@ -255,21 +235,33 @@ export default function TakeOrderScreen() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => {
           const remaining = item.total_amount - item.paid_amount;
+
+      <Text style={[styles.title, { marginTop: 30 }]}>Today's Orders</Text>
+      {orders.length === 0 ? (
+        <Text>No orders yet.</Text>
+      ) : (
+        orders.map((order) => {
+          const diff = order.paid_amount - order.total_amount;
+
+          let statusText = "Paid in full";
+          let statusColor = "green";
+
+          if (diff < 0) {
+            statusText = `Remaining: Rs ${Math.abs(diff)}`;
+            statusColor = "red";
+          } else if (diff > 0) {
+            statusText = `You have: Rs ${diff} balance`;
+            statusColor = "orange";
+          }
+
           return (
             <View style={styles.orderItem}>
               <Text style={styles.orderText}>
                 👤 {item.userName} - Rs {item.total_amount} (Paid: Rs{" "}
                 {item.paid_amount})
               </Text>
-              <Text
-                style={{
-                  color: remaining === 0 ? "green" : "red",
-                  fontWeight: "bold",
-                }}
-              >
-                {remaining === 0
-                  ? "Paid in full"
-                  : `Remaining: Rs ${remaining}`}
+              <Text style={{ color: statusColor, fontWeight: "bold" }}>
+                {statusText}
               </Text>
             </View>
           );
