@@ -116,10 +116,9 @@ export default function TakeOrderScreen() {
     const paid = parseInt(paidAmount) || 0;
 
     try {
-      const date = new Date().toISOString().split("T")[0];
       const result = await db.runAsync(
-        "INSERT INTO orders (user_id, date, total_amount, paid_amount) VALUES (?, ?, ?, ?)",
-        [selectedUserId, date, totalAmount, paid]
+        "INSERT INTO orders (user_id, total_amount, paid_amount) VALUES (?, ?, ?)",
+        [selectedUserId, totalAmount, paid]
       );
 
       const orderId = result.lastInsertRowId;

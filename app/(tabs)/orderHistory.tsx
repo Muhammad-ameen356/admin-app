@@ -1,124 +1,180 @@
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { dbName } from "@/constants/constants";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
-import { useFocusEffect } from "@react-navigation/native";
-import React, { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Platform,
-  Button,
-} from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
+import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import _ from "lodash";
+import React, { useCallback, useState } from "react";
+
+import {
+  Button,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 
 let db: SQLiteDatabase;
 
 export default function OrderHistoryScreen() {
-  const [orders, setOrders] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [groupedOrders, setGroupedOrders] = useState<Record<number, any[]>>({});
+  const [expandedUsers, setExpandedUsers] = useState<Record<number, boolean>>(
+    {}
+  );
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
         db = await openDatabaseAsync(dbName, { useNewConnection: true });
-        fetchOrders(selectedDate);
+        fetchOrdersByDate(selectedDate);
       })();
     }, [])
   );
 
-  const fetchOrders = async (date: Date) => {
+  const fetchOrdersByDate = async (date: Date) => {
     const dateStr = date.toISOString().split("T")[0];
-
     const result = await db.getAllAsync<any>(
-      `SELECT orders.id, orders.date, users.name AS userName, orders.total_amount, orders.paid_amount
+      `SELECT orders.id, users.id as userId, users.name as userName, orders.total_amount, orders.paid_amount, orders.date
        FROM orders
        JOIN users ON users.id = orders.user_id
        WHERE orders.date = ?
-       ORDER BY orders.id DESC`,
+       ORDER BY users.name`,
       [dateStr]
     );
 
-    setOrders(result);
+    const grouped: Record<number, any[]> = {};
+    result.forEach((order) => {
+      if (!grouped[order.userId]) grouped[order.userId] = [];
+      grouped[order.userId].push(order);
+    });
+
+    console.log(grouped, "grouped");
+    setGroupedOrders(grouped);
   };
 
-  const onDateChange = (event: any, selected?: Date) => {
-    setShowDatePicker(Platform.OS === "ios");
+  const onChangeDate = (event: any, selected?: Date) => {
+    setShowPicker(Platform.OS === "ios");
     if (selected) {
       setSelectedDate(selected);
-      fetchOrders(selected);
+      fetchOrdersByDate(selected);
     }
   };
 
-  const renderOrder = ({ item }: { item: any }) => {
-    const diff = item.paid_amount - item.total_amount;
-    let statusText = "Paid in full";
-    let statusColor = "green";
+  const toggleUserExpansion = (userId: number) => {
+    setExpandedUsers((prev) => ({ ...prev, [userId]: !prev[userId] }));
+  };
 
-    if (diff < 0) {
-      statusText = `Remaining: Rs ${Math.abs(diff)}`;
-      statusColor = "red";
-    } else if (diff > 0) {
-      statusText = `Advance: Rs ${diff}`;
-      statusColor = "orange";
-    }
+  const formatTime = (datetime: string): string => {
+    console.log(datetime);
+    if (!_.isString(datetime)) return "Invalid Time";
 
-    return (
-      <View style={styles.orderCard}>
-        <Text style={styles.orderText}>👤 {item.userName}</Text>
-        <Text>Date: {item.date}</Text>
-        <Text>Total: Rs {item.total_amount}</Text>
-        <Text>Paid: Rs {item.paid_amount}</Text>
-        <Text style={{ color: statusColor, fontWeight: "bold" }}>{statusText}</Text>
-      </View>
-    );
+    const date = new Date(datetime);
+    if (_.isNaN(date.getTime())) return "Invalid Time";
+
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12; // convert 0 to 12
+    const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+
+    return `${hours}:${minutesStr} ${ampm}`;
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Order History</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <ThemedText style={styles.title}>Order History</ThemedText>
 
-      <Text style={styles.label}>
-        📅 Date: {selectedDate.toISOString().split("T")[0]}
-      </Text>
-      <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
-
-      {showDatePicker && (
+      <ThemedText style={styles.dateLabel}>
+        🗓 Date: {selectedDate.toISOString().split("T")[0]}
+      </ThemedText>
+      <Button title="Select Date" onPress={() => setShowPicker(true)} />
+      {showPicker && (
         <DateTimePicker
           value={selectedDate}
           mode="date"
           display="default"
-          onChange={onDateChange}
+          onChange={onChangeDate}
         />
       )}
 
-      {orders.length === 0 ? (
-        <Text style={styles.noOrders}>No orders found for this date.</Text>
+      {Object.keys(groupedOrders).length === 0 ? (
+        <ThemedText style={styles.noData}>No orders found.</ThemedText>
       ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderOrder}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
+        Object.entries(groupedOrders).map(([userId, orders]) => {
+          const isExpanded = expandedUsers[+userId];
+          const total = orders.reduce((acc, o) => acc + o.total_amount, 0);
+          const paid = orders.reduce((acc, o) => acc + o.paid_amount, 0);
+          const remaining = total - paid;
+          const statusText =
+            remaining === 0 ? "Paid in full" : `Remaining: Rs ${remaining}`;
+          const statusColor = remaining === 0 ? "green" : "red";
+
+          return (
+            <ThemedView key={userId} style={styles.userGroup}>
+              <ThemedText style={styles.userName}>
+                👤 {orders[0].userName}
+              </ThemedText>
+              <TouchableOpacity onPress={() => toggleUserExpansion(+userId)}>
+                <ThemedText style={{ color: "#007bff", marginBottom: 10 }}>
+                  {isExpanded ? "Hide Orders" : `Orders (${orders.length})`}
+                </ThemedText>
+              </TouchableOpacity>
+
+              {isExpanded && (
+                <>
+                  {orders.map((order) => (
+                    <ThemedView key={order.id} style={styles.orderItem}>
+                      <ThemedText
+                        style={[styles.orderText, { color: undefined }]}
+                      >
+                        {" "}
+                        {/* ensure correct contrast */}
+                        Order ID #{order.id} - Rs {order.total_amount} (Paid: Rs{" "}
+                        {order.paid_amount})
+                      </ThemedText>
+                      <ThemedText style={{ fontSize: 12, color: "gray" }}>
+                        ⏰ {formatTime(order.date)}
+                      </ThemedText>
+                    </ThemedView>
+                  ))}
+
+                  <ThemedText style={{ fontWeight: "bold", marginTop: 5 }}>
+                    Total: Rs {total} | Paid: Rs {paid}
+                  </ThemedText>
+                  <ThemedText
+                    style={{ color: statusColor, fontWeight: "bold" }}
+                  >
+                    {statusText}
+                  </ThemedText>
+                </>
+              )}
+            </ThemedView>
+          );
+        })
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { padding: 20 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-  label: { fontSize: 16, marginBottom: 10 },
-  noOrders: { marginTop: 20, fontSize: 16, color: "gray" },
-  orderCard: {
-    backgroundColor: "#f9f9f9",
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 12,
-    borderColor: "#ddd",
-    borderWidth: 1,
+  dateLabel: { fontSize: 16, marginVertical: 10 },
+  noData: { marginTop: 20, fontSize: 16 },
+  userGroup: { marginBottom: 20 },
+  userName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
   },
-  orderText: { fontSize: 16, fontWeight: "600" },
+  orderItem: {
+    backgroundColor: "#f2f2f2",
+    padding: 10,
+    marginBottom: 8,
+    borderRadius: 6,
+  },
+  orderText: { fontSize: 14 },
 });

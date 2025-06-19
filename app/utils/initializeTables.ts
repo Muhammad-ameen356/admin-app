@@ -42,5 +42,24 @@ const createTableInDB = async () => {
         );
       `);
 };
+// export const dropAllTables = async () => {
+//   const db: SQLiteDatabase = await openDatabaseAsync(dbName);
+ 
+//   try {
+//     // Disable foreign key checks to allow dropping in any order
+//     await db.execAsync("PRAGMA foreign_keys = OFF;");
+ 
+//     await db.execAsync("DROP TABLE IF EXISTS order_items;");
+//     await db.execAsync("DROP TABLE IF EXISTS orders;");
+//     await db.execAsync("DROP TABLE IF EXISTS items;");
+//     await db.execAsync("DROP TABLE IF EXISTS users;");
+ 
+//     await db.execAsync("PRAGMA foreign_keys = ON;");
+ 
+//     console.log("All tables dropped successfully.");
+//   } catch (error) {
+//     console.error("Error dropping tables:", error);
+//   }
+// };
 
 export default createTableInDB;

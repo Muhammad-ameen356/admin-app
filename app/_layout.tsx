@@ -27,7 +27,6 @@ export default function RootLayout() {
         Alert.alert(`Error In Creating table ${err}`);
       }
     };
-
     createTable();
   }, []);
 
