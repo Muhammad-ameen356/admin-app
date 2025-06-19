@@ -157,37 +157,32 @@ export default function TakeOrderScreen() {
       <Text style={styles.title}>Take Order</Text>
 
       <Text style={styles.label}>Select User</Text>
-      <View style={{ zIndex: 3000 }}>
-        <DropDownPicker
-          open={userDropdownOpen}
-          value={selectedUserId}
-          listMode="MODAL"
-          modalTitle="Select a User"
-          items={[
-            { label: "-- Select User --", value: undefined },
-            ...users.map((user, ind) => ({
-              label: user.name,
-              value: user.id,
-              key: `user-${ind}-${user.id}`,
-            })),
-          ]}
-          setOpen={setUserDropdownOpen}
-          setValue={setSelectedUserId}
-          placeholder="Select User"
-          searchable={true}
-          zIndex={3000}
-          zIndexInverse={1000}
-        />
-      </View>
+      <DropDownPicker
+        listMode="MODAL"
+        modalTitle="Select a User"
+        open={userDropdownOpen}
+        value={selectedUserId}
+        items={[
+          { label: "-- Select User --", value: undefined },
+          ...users.map((user, ind) => ({
+            label: user.name,
+            value: user.id,
+            key: `user-${ind}-${user.id}`,
+          })),
+        ]}
+        setOpen={setUserDropdownOpen}
+        setValue={setSelectedUserId}
+        placeholder="Select User"
+        searchable={true}
+      />
 
       <Text style={styles.label}>Items</Text>
       {orderItems.map((item, index) => (
-        <View
-          key={`${index}-${item.itemId ?? "null"}`}
-          style={[styles.itemRow, { zIndex: 2000 - index }]}
-        >
+        <View key={`${index}-${item.itemId ?? "null"}`} style={styles.itemRow}>
           <View style={{ flex: 1 }}>
             <DropDownPicker
+              listMode="MODAL"
+              modalTitle="Select an Item"
               open={item.dropdownOpen || false}
               value={item.itemId}
               items={items.map((i, ind) => ({
@@ -195,8 +190,6 @@ export default function TakeOrderScreen() {
                 value: i.id,
                 key: `item-${ind}-${i.id}`,
               }))}
-              listMode="MODAL"
-              modalTitle="Select an item"
               setOpen={(val) => {
                 const updated = [...orderItems];
                 updated[index].dropdownOpen =
@@ -213,8 +206,6 @@ export default function TakeOrderScreen() {
               }}
               placeholder="Select Item"
               searchable={true}
-              zIndex={2000 - index}
-              zIndexInverse={4000 + index}
               style={{ flex: 1 }}
               dropDownContainerStyle={{ width: "80%" }}
             />
@@ -251,6 +242,8 @@ export default function TakeOrderScreen() {
       />
 
       <Button title="Save Order" onPress={handleSaveOrder} />
+
+      <Text style={[styles.label, { marginTop: 30 }]}>Todays Orders</Text>
 
       {orders.length === 0 ? (
         <Text>No orders yet.</Text>
