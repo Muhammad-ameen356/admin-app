@@ -1,3 +1,5 @@
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { dbName } from "@/constants/constants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
@@ -8,8 +10,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  View,
+  Text
 } from "react-native";
 
 let db: SQLiteDatabase;
@@ -56,11 +57,11 @@ export default function OrderSummaryScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Order Summary</Text>
+      <ThemedText style={styles.title}>Order Summary</ThemedText>
 
-      <Text style={styles.dateLabel}>
+      <ThemedText style={styles.dateLabel}>
         📅 Date: {selectedDate.toISOString().split("T")[0]}
-      </Text>
+      </ThemedText>
       <Button title="Select Date" onPress={() => setShowPicker(true)} />
       {showPicker && (
         <DateTimePicker
@@ -72,14 +73,14 @@ export default function OrderSummaryScreen() {
       )}
 
       {summary.length === 0 ? (
-        <Text style={styles.noData}>No orders found.</Text>
+        <ThemedText style={styles.noData}>No orders found.</ThemedText>
       ) : (
         summary.map((item, index) => (
-          <View key={index} style={styles.itemRow}>
+          <ThemedView key={index} style={styles.itemRow}>
             <Text style={styles.itemText}>
               🍽 {item.name}: {item.total}
             </Text>
-          </View>
+          </ThemedView>
         ))
       )}
     </ScrollView>

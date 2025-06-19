@@ -1,5 +1,7 @@
 // app/(tabs)/items.tsx
 
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { dbName } from "@/constants/constants";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
@@ -10,8 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
-  View,
+  TouchableOpacity
 } from "react-native";
 
 type Item = {
@@ -108,8 +109,8 @@ export default function ItemScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Manage Items</Text>
+    <ThemedView style={styles.container}>
+      <ThemedText style={styles.title}>Manage Items</ThemedText>
 
       <TextInput
         style={styles.input}
@@ -125,7 +126,7 @@ export default function ItemScreen() {
         keyboardType="numeric"
       />
 
-      <View style={styles.buttonRow}>
+      <ThemedView style={styles.buttonRow}>
         <Button
           title={editingId ? "Update Item" : "Add Item"}
           onPress={handleSave}
@@ -133,28 +134,28 @@ export default function ItemScreen() {
         {editingId && (
           <Button title="Cancel" color="gray" onPress={cancelEdit} />
         )}
-      </View>
+      </ThemedView>
 
       <FlatList
         data={items}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={<Text>No items found</Text>}
         renderItem={({ item }) => (
-          <View style={styles.itemRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemText}>{item.name}</Text>
-              <Text style={styles.itemSub}>Rs {item.amount}</Text>
-            </View>
+          <ThemedView style={styles.itemRow}>
+            <ThemedView style={{ flex: 1 }}>
+              <ThemedText style={styles.itemText}>{item.name}</ThemedText>
+              <ThemedText style={styles.itemSub}>Rs {item.amount}</ThemedText>
+            </ThemedView>
             <TouchableOpacity onPress={() => handleEdit(item)}>
-              <Text style={styles.editBtn}>✏️</Text>
+              <ThemedText style={styles.editBtn}>✏️</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleDelete(item.id)}>
-              <Text style={styles.deleteBtn}>🗑️</Text>
+              <ThemedText style={styles.deleteBtn}>🗑️</ThemedText>
             </TouchableOpacity>
-          </View>
+          </ThemedView>
         )}
       />
-    </View>
+    </ThemedView>
   );
 }
 
