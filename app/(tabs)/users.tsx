@@ -1,3 +1,5 @@
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { dbName } from "@/constants/constants";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
@@ -11,8 +13,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Type for User
 type User = {
@@ -128,61 +130,64 @@ export default function UserCrudScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <Text style={styles.title}>{editingId ? "Edit User" : "Add User"}</Text>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ThemedText style={styles.title}>
+          {editingId ? "Edit User" : "Add User"}
+        </ThemedText>
 
-      <TextInput
-        placeholder="Enter Name"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-      />
+        <TextInput
+          placeholder="Enter Name"
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
+        />
 
-      <TextInput
-        placeholder="Enter Employee ID"
-        value={employeeId}
-        onChangeText={setEmployeeId}
-        keyboardType="numeric"
-        style={styles.input}
-      />
+        <TextInput
+          placeholder="Enter Employee ID"
+          value={employeeId}
+          onChangeText={setEmployeeId}
+          keyboardType="numeric"
+          style={styles.input}
+        />
 
-      <View style={styles.buttonGroup}>
-        <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
-        {editingId !== null && (
-          <Button title="Cancel" onPress={cancelEdit} color="gray" />
-        )}
-      </View>
+        <ThemedView style={styles.buttonGroup}>
+          <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
+          {editingId !== null && (
+            <Button title="Cancel" onPress={cancelEdit} color="gray" />
+          )}
+        </ThemedView>
 
-      <Text style={styles.subTitle}>Users</Text>
-      <FlatList
-        data={users}
-        keyExtractor={(item) => item.id.toString()}
-        ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text>
-              {item.name} (Emp ID: {item.employeeId})
-            </Text>
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={() => handleEdit(item)}>
-                <Text style={styles.edit}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                <Text style={styles.delete}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
-    </KeyboardAvoidingView>
+        <ThemedText style={styles.subTitle}>Users</ThemedText>
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.id.toString()}
+          ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
+          renderItem={({ item }) => (
+            <ThemedView style={styles.row}>
+              <ThemedText>
+                {item.name} (Emp ID: {item.employeeId})
+              </ThemedText>
+              <ThemedView style={styles.actions}>
+                <TouchableOpacity onPress={() => handleEdit(item)}>
+                  <ThemedText style={styles.edit}>Edit</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                  <ThemedText style={styles.delete}>Delete</ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
+            </ThemedView>
+          )}
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { padding: 20, flex: 1 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
   subTitle: {
     fontSize: 18,

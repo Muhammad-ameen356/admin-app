@@ -7,11 +7,12 @@ import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
   Button,
+  FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
 
@@ -56,7 +57,7 @@ export default function OrderSummaryScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ThemedText style={styles.title}>Order Summary</ThemedText>
 
       <ThemedText style={styles.dateLabel}>
@@ -75,15 +76,20 @@ export default function OrderSummaryScreen() {
       {summary.length === 0 ? (
         <ThemedText style={styles.noData}>No orders found.</ThemedText>
       ) : (
-        summary.map((item, index) => (
-          <ThemedView key={index} style={styles.itemRow}>
-            <Text style={styles.itemText}>
-              🍽 {item.name}: {item.total}
-            </Text>
-          </ThemedView>
-        ))
+        <FlatList
+          data={summary}
+          keyExtractor={(item, index) => index.toString()} // or use a unique ID if available
+          contentContainerStyle={{ paddingBottom: 20 }} // optional
+          renderItem={({ item }) => (
+            <ThemedView style={styles.itemRow}>
+              <Text style={styles.itemText}>
+                🍽 {item.name}: {item.total}
+              </Text>
+            </ThemedView>
+          )}
+        />
       )}
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 

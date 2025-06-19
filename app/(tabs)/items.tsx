@@ -12,8 +12,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity
+  TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Item = {
   id: number;
@@ -109,58 +110,60 @@ export default function ItemScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText style={styles.title}>Manage Items</ThemedText>
+    <SafeAreaView style={styles.container}>
+      <ThemedView>
+        <ThemedText style={styles.title}>Manage Items</ThemedText>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Item Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Amount"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-
-      <ThemedView style={styles.buttonRow}>
-        <Button
-          title={editingId ? "Update Item" : "Add Item"}
-          onPress={handleSave}
+        <TextInput
+          style={styles.input}
+          placeholder="Item Name"
+          value={name}
+          onChangeText={setName}
         />
-        {editingId && (
-          <Button title="Cancel" color="gray" onPress={cancelEdit} />
-        )}
-      </ThemedView>
+        <TextInput
+          style={styles.input}
+          placeholder="Amount"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+        />
 
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id.toString()}
-        ListEmptyComponent={<Text>No items found</Text>}
-        renderItem={({ item }) => (
-          <ThemedView style={styles.itemRow}>
-            <ThemedView style={{ flex: 1 }}>
-              <ThemedText style={styles.itemText}>{item.name}</ThemedText>
-              <ThemedText style={styles.itemSub}>Rs {item.amount}</ThemedText>
+        <ThemedView style={styles.buttonRow}>
+          <Button
+            title={editingId ? "Update Item" : "Add Item"}
+            onPress={handleSave}
+          />
+          {editingId && (
+            <Button title="Cancel" color="gray" onPress={cancelEdit} />
+          )}
+        </ThemedView>
+
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id.toString()}
+          ListEmptyComponent={<Text>No items found</Text>}
+          renderItem={({ item }) => (
+            <ThemedView style={styles.itemRow}>
+              <ThemedView style={{ flex: 1 }}>
+                <ThemedText style={styles.itemText}>{item.name}</ThemedText>
+                <ThemedText style={styles.itemSub}>Rs {item.amount}</ThemedText>
+              </ThemedView>
+              <TouchableOpacity onPress={() => handleEdit(item)}>
+                <ThemedText style={styles.editBtn}>✏️</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                <ThemedText style={styles.deleteBtn}>🗑️</ThemedText>
+              </TouchableOpacity>
             </ThemedView>
-            <TouchableOpacity onPress={() => handleEdit(item)}>
-              <ThemedText style={styles.editBtn}>✏️</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDelete(item.id)}>
-              <ThemedText style={styles.deleteBtn}>🗑️</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
-        )}
-      />
-    </ThemedView>
+          )}
+        />
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, flex: 1 },
+  container: { padding: 20, },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
   input: {
     borderWidth: 1,
