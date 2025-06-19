@@ -22,6 +22,8 @@ export default function RootLayout() {
   useEffect(() => {
     const createTable = async () => {
       try {
+        //! Use this function carefully
+        // await dropAllTables();
         await createTableInDB();
       } catch (err) {
         Alert.alert(`Error In Creating table ${err}`);

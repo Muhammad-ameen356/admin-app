@@ -1,75 +1,100 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { dbName } from "@/constants/constants";
+import { openDatabaseAsync } from "expo-sqlite";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+type UserBalance = {
+  id: number;
+  name: string;
+  employeeId: number;
+  total: number;
+  paid: number;
+};
 
 export default function HomeScreen() {
+  const [userBalances, setUserBalances] = useState<UserBalance[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const db = await openDatabaseAsync(dbName, {
+        useNewConnection: true,
+      });
+
+      const result = await db.getAllAsync<UserBalance>(`
+        SELECT 
+          u.id,
+          u.name,
+          u.employeeId,
+          IFNULL(SUM(o.total_amount), 0) AS total,
+          IFNULL(SUM(o.paid_amount), 0) AS paid
+        FROM users u
+        LEFT JOIN orders o ON u.id = o.user_id
+        GROUP BY u.id
+        ORDER BY u.name
+      `);
+
+      setUserBalances(result);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>User Balance Summary</Text>
+
+      {userBalances.map((user) => {
+        const balance = user.paid - user.total;
+
+        return (
+          <View key={user.id} style={styles.card}>
+            <Text style={styles.name}>
+              👤 {user.name} ({user.employeeId})
+            </Text>
+            <Text>Total Orders: Rs {user.total}</Text>
+            <Text>Paid: Rs {user.paid}</Text>
+            <Text
+              style={{
+                fontWeight: "bold",
+                color: balance === 0 ? "green" : balance < 0 ? "red" : "orange",
+              }}
+            >
+              {balance === 0
+                ? "✅ Settled"
+                : balance < 0
+                ? `❌ Pending: Rs ${Math.abs(balance)}`
+                : `💰 Extra Paid: Rs ${balance}`}
+            </Text>
+          </View>
+        );
+      })}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: { padding: 20 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  card: {
+    backgroundColor: "#f5f5f5",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  name: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
