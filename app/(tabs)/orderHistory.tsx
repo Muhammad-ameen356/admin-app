@@ -70,7 +70,9 @@ export default function OrderHistoryScreen() {
         <Text>Date: {item.date}</Text>
         <Text>Total: Rs {item.total_amount}</Text>
         <Text>Paid: Rs {item.paid_amount}</Text>
-        <Text style={{ color: statusColor, fontWeight: "bold" }}>{statusText}</Text>
+        <Text style={{ color: statusColor, fontWeight: "bold" }}>
+          {statusText}
+        </Text>
       </View>
     );
   };
