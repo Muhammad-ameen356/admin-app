@@ -1,5 +1,6 @@
 import { dbName } from "@/constants/constants";
 import { useFocusEffect } from "@react-navigation/native";
+import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -62,14 +63,17 @@ export default function TakeOrderScreen() {
   };
 
   const loadOrders = async () => {
-    const date = new Date().toISOString().split("T")[0];
+    const date = dayjs().format("YYYY-MM-DD");
+
     const res = await db.getAllAsync<any>(
       `SELECT orders.id, users.name as userName, orders.total_amount, orders.paid_amount
-       FROM orders
-       JOIN users ON users.id = orders.user_id
-       WHERE orders.date = ?`,
-      [date]
+         FROM orders
+         JOIN users ON users.id = orders.user_id
+         WHERE orders.order_date = ?`,
+      [date] // matches any datetime starting with today's date
     );
+
+    console.log(res, "res");
     setOrders(res);
   };
 
@@ -116,10 +120,13 @@ export default function TakeOrderScreen() {
     const paid = parseInt(paidAmount) || 0;
 
     try {
-      const date = new Date().toISOString().split("T")[0];
+      const now = dayjs();
+      const orderDate = now.format("YYYY-MM-DD");
+      const orderTime = now.format("HH:mm:ss");
+
       const result = await db.runAsync(
-        "INSERT INTO orders (user_id, date, total_amount, paid_amount) VALUES (?, ?, ?, ?)",
-        [selectedUserId, date, totalAmount, paid]
+        "INSERT INTO orders (user_id, order_date, order_time, total_amount, paid_amount) VALUES (?, ?, ?, ?, ?)",
+        [selectedUserId, orderDate, orderTime, totalAmount, paid]
       );
 
       const orderId = result.lastInsertRowId;
@@ -266,6 +273,12 @@ export default function TakeOrderScreen() {
               <Text style={styles.orderText}>
                 👤 {order.userName} - Rs {order.total_amount} (Paid: Rs{" "}
                 {order.paid_amount})
+              </Text>
+              <Text style={{ color: "gray", fontSize: 12 }}>
+                ⏰ {dayjs(order.order_date).format("hh:mm A")}
+              </Text>
+              <Text style={{ color: "gray", fontSize: 12 }}>
+                ⏰ {order.order_time}
               </Text>
               <Text style={{ color: statusColor, fontWeight: "bold" }}>
                 {statusText}
