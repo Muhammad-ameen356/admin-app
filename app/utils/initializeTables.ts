@@ -26,7 +26,8 @@ const createTableInDB = async () => {
         CREATE TABLE IF NOT EXISTS orders (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER,
-          date TEXT DEFAULT (DATE('now')),
+          order_date TEXT NOT NULL,
+          order_time TEXT NOT NULL,
           total_amount INTEGER,
           paid_amount INTEGER,
           FOREIGN KEY(user_id) REFERENCES users(id)
