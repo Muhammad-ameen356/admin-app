@@ -68,7 +68,6 @@ export default function OrderHistoryScreen() {
   };
 
   const formatTime = (datetime: string): string => {
-    console.log(datetime);
     if (!_.isString(datetime)) return "Invalid Time";
 
     const date = new Date(datetime);
