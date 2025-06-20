@@ -9,9 +9,13 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useEffect } from "react";
 import { Alert } from "react-native";
 import createTableInDB from "./utils/initializeTables";
+
+dayjs.extend(customParseFormat);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

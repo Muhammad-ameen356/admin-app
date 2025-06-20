@@ -1,16 +1,11 @@
-import { dbName } from "@/constants/constants";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
-import { useFocusEffect } from "@react-navigation/native";
-import React, { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Platform,
-  Button,
-} from "react-native";
+import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
+import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
+import dayjs from "dayjs";
+import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import React, { useCallback, useState } from "react";
+import { Button, Platform, StyleSheet, Text, View } from "react-native";
 
 let db: SQLiteDatabase;
 
@@ -19,24 +14,44 @@ export default function OrderHistoryScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const todayDate = dayjs().toDate(); // Returns a JS Date object
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
+        setSelectedDate(todayDate);
         db = await openDatabaseAsync(dbName, { useNewConnection: true });
-        fetchOrders(selectedDate);
+        fetchOrders(todayDate);
       })();
     }, [])
   );
 
   const fetchOrders = async (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = dayjs(date).format(DATE_FORMAT_FOR_DB);
 
     const result = await db.getAllAsync<any>(
-      `SELECT orders.id, orders.date, users.name AS userName, orders.total_amount, orders.paid_amount
-       FROM orders
-       JOIN users ON users.id = orders.user_id
-       WHERE orders.date = ?
-       ORDER BY orders.id DESC`,
+      `SELECT 
+          u.id AS userId,
+          u.name AS userName,
+          SUM(o.total_amount) AS total_amount,
+          SUM(o.paid_amount) AS paid_amount,
+          (
+            SELECT GROUP_CONCAT(item_summary, ', ')
+            FROM (
+              SELECT i.name || ' x ' || SUM(oi.quantity) AS item_summary
+              FROM orders o2
+              JOIN order_items oi ON oi.order_id = o2.id
+              JOIN items i ON i.id = oi.item_id
+              WHERE o2.user_id = u.id AND o2.order_date = o.order_date
+              GROUP BY i.name
+            )
+          ) AS items_summary
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        WHERE o.order_date = ?
+        GROUP BY u.id
+        ORDER BY u.name ASC
+      `,
       [dateStr]
     );
 
@@ -82,7 +97,7 @@ export default function OrderHistoryScreen() {
       <Text style={styles.title}>Order History</Text>
 
       <Text style={styles.label}>
-        📅 Date: {selectedDate.toISOString().split("T")[0]}
+        📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
       </Text>
       <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
 
@@ -95,7 +110,7 @@ export default function OrderHistoryScreen() {
         />
       )}
 
-      {orders.length === 0 ? (
+      {/* {orders.length === 0 ? (
         <Text style={styles.noOrders}>No orders found for this date.</Text>
       ) : (
         <FlatList
@@ -104,7 +119,7 @@ export default function OrderHistoryScreen() {
           renderItem={renderOrder}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
-      )}
+      )} */}
     </View>
   );
 }

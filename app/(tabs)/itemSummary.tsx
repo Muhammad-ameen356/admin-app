@@ -1,17 +1,13 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { dbName } from "@/constants/constants";
+import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
+import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
+import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
-import {
-  Button,
-  FlatList,
-  Platform,
-  StyleSheet,
-  Text
-} from "react-native";
+import { Button, FlatList, Platform, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
@@ -21,26 +17,29 @@ export default function OrderSummaryScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
 
+  const todayDate = dayjs().toDate(); // Returns a JS Date object
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
+        setSelectedDate(todayDate);
         db = await openDatabaseAsync(dbName, {
           useNewConnection: true,
         });
-        fetchSummary(selectedDate);
+        fetchSummary(todayDate);
       })();
     }, [])
   );
 
   const fetchSummary = async (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = dayjs(date).format(DATE_FORMAT_FOR_DB);
 
     const result = await db.getAllAsync<any>(
       `SELECT items.name, SUM(order_items.quantity) as total
        FROM order_items
        JOIN orders ON order_items.order_id = orders.id
        JOIN items ON order_items.item_id = items.id
-       WHERE orders.date = ?
+       WHERE orders.order_date = ?
        GROUP BY items.name`,
       [dateStr]
     );
@@ -61,7 +60,7 @@ export default function OrderSummaryScreen() {
       <ThemedText style={styles.title}>Order Summary</ThemedText>
 
       <ThemedText style={styles.dateLabel}>
-        📅 Date: {selectedDate.toISOString().split("T")[0]}
+        📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
       </ThemedText>
       <Button title="Select Date" onPress={() => setShowPicker(true)} />
       {showPicker && (

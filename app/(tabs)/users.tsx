@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { dbName } from "@/constants/constants";
+import { dbName } from "@/constants/DBConstants";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {

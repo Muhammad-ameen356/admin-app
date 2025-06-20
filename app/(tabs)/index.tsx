@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { dbName } from "@/constants/constants";
+import { dbName } from "@/constants/DBConstants";
 import { useFocusEffect } from "@react-navigation/native";
 import { openDatabaseAsync } from "expo-sqlite";
 import React, { useCallback, useEffect, useState } from "react";

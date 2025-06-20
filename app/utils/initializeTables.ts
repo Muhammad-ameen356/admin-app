@@ -1,4 +1,4 @@
-import { dbName } from "@/constants/constants";
+import { dbName } from "@/constants/DBConstants";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 
 const createTableInDB = async () => {

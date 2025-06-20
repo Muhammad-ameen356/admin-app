@@ -1,4 +1,4 @@
-import { dbName } from "@/constants/constants";
+import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
@@ -63,10 +63,10 @@ export default function TakeOrderScreen() {
   };
 
   const loadOrders = async () => {
-    const date = dayjs().format("YYYY-MM-DD");
+    const date = dayjs().format(DATE_FORMAT_FOR_DB);
 
     const res = await db.getAllAsync<any>(
-      `SELECT orders.id, users.name as userName, orders.total_amount, orders.paid_amount
+      `SELECT orders.id, users.name as userName, orders.order_date, orders.order_time, orders.total_amount, orders.paid_amount
          FROM orders
          JOIN users ON users.id = orders.user_id
          WHERE orders.order_date = ?`,
@@ -121,7 +121,7 @@ export default function TakeOrderScreen() {
 
     try {
       const now = dayjs();
-      const orderDate = now.format("YYYY-MM-DD");
+      const orderDate = now.format(DATE_FORMAT_FOR_DB);
       const orderTime = now.format("HH:mm:ss");
 
       const result = await db.runAsync(
@@ -275,10 +275,10 @@ export default function TakeOrderScreen() {
                 {order.paid_amount})
               </Text>
               <Text style={{ color: "gray", fontSize: 12 }}>
-                ⏰ {dayjs(order.order_date).format("hh:mm A")}
+                ⏰ {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
               </Text>
               <Text style={{ color: "gray", fontSize: 12 }}>
-                ⏰ {order.order_time}
+                ⏰ {order.order_date}
               </Text>
               <Text style={{ color: statusColor, fontWeight: "bold" }}>
                 {statusText}
