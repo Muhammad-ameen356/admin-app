@@ -185,7 +185,10 @@ export default function TakeOrderScreen() {
 
       <Text style={styles.label}>Items</Text>
       {orderItems.map((item, index) => (
-        <View key={`${index}-${item.itemId ?? "null"}`} style={styles.itemRow}>
+        <View
+          key={`orderItem-${index}-${item.itemId ?? Math.random()}`}
+          style={styles.itemRow}
+        >
           <View style={{ flex: 1 }}>
             <DropDownPicker
               listMode="MODAL"
@@ -269,9 +272,12 @@ export default function TakeOrderScreen() {
           }
 
           return (
-            <View key={order.id} style={styles.orderItem}>
+            <View
+              key={`order-${order.id}-${order.order_time}`}
+              style={styles.orderItem}
+            >
               <Text style={styles.orderText}>
-                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs{" "}
+                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs 
                 {order.paid_amount})
               </Text>
               <Text style={{ color: "gray", fontSize: 12 }}>

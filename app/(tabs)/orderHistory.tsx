@@ -1,3 +1,4 @@
+import { ThemedText } from "@/components/ThemedText";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -6,6 +7,7 @@ import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import { Button, Platform, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
 
@@ -93,12 +95,12 @@ export default function OrderHistoryScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Order History</Text>
+    <SafeAreaView style={styles.container}>
+      <ThemedText style={styles.title}>Order History</ThemedText>
 
-      <Text style={styles.label}>
+      <ThemedText style={styles.label}>
         📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
-      </Text>
+      </ThemedText>
       <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
 
       {showDatePicker && (
@@ -120,12 +122,12 @@ export default function OrderHistoryScreen() {
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )} */}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { flex: 1, padding: 20 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
   label: { fontSize: 16, marginBottom: 10 },
   noOrders: { marginTop: 20, fontSize: 16, color: "gray" },
