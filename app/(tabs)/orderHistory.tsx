@@ -1,3 +1,4 @@
+import { Collapsible } from "@/components/Collapsible";
 import { ThemedText } from "@/components/ThemedText";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
@@ -42,6 +43,7 @@ export default function OrderHistoryScreen() {
       `SELECT 
         u.id AS userId,
         u.name AS userName,
+        u.employeeId AS employeeId,
         o.id AS orderId,
         o.order_date,
         o.order_time,
@@ -64,6 +66,7 @@ export default function OrderHistoryScreen() {
       [userId: number]: {
         userId: number;
         userName: string;
+        employeeId: number;
         orders: {
           orderId: number;
           order_date: string;
@@ -72,6 +75,10 @@ export default function OrderHistoryScreen() {
           paid_amount: number;
           items: { name: string; quantity: number; amount: number }[];
         }[];
+        totalAmount: number;
+        totalPaid: number;
+        overallStatus: string;
+        statusColor: string;
       };
     } = {};
 
@@ -80,7 +87,12 @@ export default function OrderHistoryScreen() {
         grouped[row.userId] = {
           userId: row.userId,
           userName: row.userName,
+          employeeId: row.employeeId,
           orders: [],
+          totalAmount: 0,
+          totalPaid: 0,
+          overallStatus: "",
+          statusColor: "green",
         };
       }
 
@@ -97,6 +109,10 @@ export default function OrderHistoryScreen() {
           items: [],
         };
         user.orders.push(order);
+
+        // Add totals
+        user.totalAmount += row.total_amount;
+        user.totalPaid += row.paid_amount;
       }
 
       order.items.push({
@@ -104,6 +120,21 @@ export default function OrderHistoryScreen() {
         quantity: row.quantity,
         amount: row.itemAmount,
       });
+    }
+
+    // Calculate overall status per user
+    for (const user of Object.values(grouped)) {
+      const diff = user.totalPaid - user.totalAmount;
+      if (diff === 0) {
+        user.overallStatus = "Paid in full";
+        user.statusColor = "green";
+      } else if (diff > 0) {
+        user.overallStatus = `Advance: Rs ${diff}`;
+        user.statusColor = "orange";
+      } else {
+        user.overallStatus = `Remaining: Rs ${Math.abs(diff)}`;
+        user.statusColor = "red";
+      }
     }
 
     setOrders(Object.values(grouped));
@@ -150,12 +181,40 @@ export default function OrderHistoryScreen() {
     );
   };
 
-  const renderUser = ({ item }: { item: any }) => (
-    <View style={styles.userBox}>
-      <Text style={styles.userTitle}>👤 {item.userName}</Text>
-      {item.orders.map(renderOrder)}
-    </View>
-  );
+  const renderUser = ({ item }: { item: any }) => {
+    const totalAmount = item.orders.reduce(
+      (sum: number, order: any) => sum + order.total_amount,
+      0
+    );
+    const totalPaid = item.orders.reduce(
+      (sum: number, order: any) => sum + order.paid_amount,
+      0
+    );
+  
+    const diff = totalPaid - totalAmount;
+    let overallStatus = "Paid in full";
+    let statusColor = "green";
+  
+    if (diff < 0) {
+      overallStatus = `Remaining: Rs ${Math.abs(diff)}`;
+      statusColor = "red";
+    } else if (diff > 0) {
+      overallStatus = `Advance: Rs ${diff}`;
+      statusColor = "orange";
+    }
+  
+    return (
+      <View style={styles.userBox}>
+        <Collapsible
+          title={`👤 ${item.userName} (${item.employeeId}) | Total: Rs ${totalAmount} | ${overallStatus}`}
+          titleStyle={{ color: statusColor }}
+        >
+          {item.orders.map(renderOrder)}
+        </Collapsible>
+      </View>
+    );
+  };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -199,11 +258,6 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
-  },
-  userTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
   },
   orderBox: {
     backgroundColor: "#fff",
