@@ -73,7 +73,7 @@ export default function TakeOrderScreen() {
       [date] // matches any datetime starting with today's date
     );
 
-    console.log(res, "res");
+    // console.log(res, "res");
     setOrders(res);
   };
 
@@ -277,7 +277,7 @@ export default function TakeOrderScreen() {
               style={styles.orderItem}
             >
               <Text style={styles.orderText}>
-                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs 
+                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs
                 {order.paid_amount})
               </Text>
               <Text style={{ color: "gray", fontSize: 12 }}>

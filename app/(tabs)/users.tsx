@@ -83,9 +83,15 @@ export default function UserCrudScreen() {
       setEmployeeId("");
       setEditingId(null);
       await loadUsers();
-    } catch (err) {
-      console.error("Save error:", err);
-      Alert.alert("Error", "Could not save user.");
+    } catch (error: any) {
+      if (
+        error.message.includes("UNIQUE constraint failed") &&
+        error.message.includes("users.employeeId")
+      ) {
+        return Alert.alert("Error: This employee ID is already in use.");
+      } else {
+        return Alert.alert("An unexpected error occurred: " + error.message);
+      }
     }
   };
 
