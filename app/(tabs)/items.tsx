@@ -1,5 +1,3 @@
-// app/(tabs)/items.tsx
-
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { dbName } from "@/constants/DBConstants";
@@ -13,6 +11,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -25,6 +24,9 @@ type Item = {
 let db: SQLiteDatabase;
 
 export default function ItemScreen() {
+  const colorScheme = useColorScheme() ?? "light";
+  const styles = getStyles(colorScheme);
+
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [items, setItems] = useState<Item[]>([]);
@@ -117,12 +119,14 @@ export default function ItemScreen() {
         <TextInput
           style={styles.input}
           placeholder="Item Name"
+          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
           value={name}
           onChangeText={setName}
         />
         <TextInput
           style={styles.input}
           placeholder="Amount"
+          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
           value={amount}
           onChangeText={setAmount}
           keyboardType="numeric"
@@ -141,7 +145,9 @@ export default function ItemScreen() {
         <FlatList
           data={items}
           keyExtractor={(item) => item.id.toString()}
-          ListEmptyComponent={<Text>No items found</Text>}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No items found</Text>
+          }
           renderItem={({ item }) => (
             <ThemedView style={styles.itemRow}>
               <ThemedView style={{ flex: 1 }}>
@@ -162,32 +168,61 @@ export default function ItemScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 20, },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 6,
-    backgroundColor: "#fff",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20,
-  },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f3f3f3",
-    padding: 10,
-    marginBottom: 8,
-    borderRadius: 6,
-  },
-  itemText: { fontSize: 16, fontWeight: "600" },
-  itemSub: { color: "#555" },
-  editBtn: { fontSize: 18, color: "blue", marginRight: 10 },
-  deleteBtn: { fontSize: 18, color: "red" },
-});
+const getStyles = (theme: "light" | "dark") =>
+  StyleSheet.create({
+    container: {
+      padding: 20,
+      flex: 1,
+      backgroundColor: theme === "dark" ? "#121212" : "#fff",
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: "bold",
+      marginBottom: 20,
+      color: theme === "dark" ? "#fff" : "#000",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme === "dark" ? "#555" : "#ccc",
+      padding: 10,
+      marginBottom: 10,
+      borderRadius: 6,
+      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
+      color: theme === "dark" ? "#fff" : "#000",
+    },
+    buttonRow: {
+      flexDirection: "row",
+      gap: 10,
+      marginBottom: 20,
+    },
+    itemRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme === "dark" ? "#1e1e1e" : "#f3f3f3",
+      padding: 10,
+      marginBottom: 8,
+      borderRadius: 6,
+    },
+    itemText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme === "dark" ? "#fff" : "#000",
+    },
+    itemSub: {
+      color: theme === "dark" ? "#aaa" : "#555",
+    },
+    editBtn: {
+      fontSize: 18,
+      color: "#007bff",
+      marginRight: 10,
+    },
+    deleteBtn: {
+      fontSize: 18,
+      color: "#d11a2a",
+    },
+    emptyText: {
+      textAlign: "center",
+      marginTop: 20,
+      color: theme === "dark" ? "#aaa" : "#888",
+    },
+  });
