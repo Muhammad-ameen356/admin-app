@@ -1,77 +1,110 @@
+import { Entypo, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, ViewStyle } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HapticTab } from "@/components/HapticTab";
-import { IconSymbol } from "@/components/ui/IconSymbol";
-import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const themeColors = Colors[colorScheme ?? "light"];
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: "absolute",
-          },
-          default: {},
-        }),
-      }}
+    <SafeAreaView
+      edges={["bottom"]}
+      style={{ flex: 1, backgroundColor: themeColors.background }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: themeColors.tint,
+          tabBarInactiveTintColor: "#999",
+          tabBarShowLabel: true,
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: "600",
+          },
+          tabBarStyle: Platform.select<ViewStyle>({
+            ios: {
+              position: "absolute",
+              height: 70,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              backgroundColor: themeColors.background,
+              shadowColor: "#000",
+              shadowOpacity: 0.1,
+              shadowOffset: { width: 0, height: -3 },
+              shadowRadius: 10,
+              elevation: 10,
+            },
+            android: {
+              height: 70,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              backgroundColor: themeColors.background,
+              borderTopWidth: 0.2,
+              elevation: 10,
+            },
+          }),
         }}
-      />
-      <Tabs.Screen
-        name="items"
-        options={{
-          title: "Items",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="fork.knife" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="users"
-        options={{
-          title: "Users",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.fill.badge.plus" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="ordersReceiving"
-        options={{
-          title: "Take Order",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="square.and.pencil" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="itemSummary"
-        options={{
-          title: "Order Summary",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="doc.text.fill" color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color }) => (
+              <Feather name="home" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="items"
+          options={{
+            title: "Items",
+            tabBarIcon: ({ color }) => (
+              <MaterialIcons name="inventory" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="users"
+          options={{
+            title: "Users",
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="people" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="ordersReceiving"
+          options={{
+            title: "Take Order",
+            tabBarIcon: ({ color }) => (
+              <Entypo name="edit" size={22} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="itemSummary"
+          options={{
+            title: "Summary",
+            tabBarIcon: ({ color }) => (
+              <Feather name="bar-chart" size={22} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="orderHistory"
+          options={{
+            title: "History",
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="time" size={22} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
+    </SafeAreaView>
   );
 }
