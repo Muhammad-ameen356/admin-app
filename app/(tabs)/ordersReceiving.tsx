@@ -1,4 +1,5 @@
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
@@ -14,6 +15,7 @@ import {
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
 
@@ -26,6 +28,9 @@ type OrderItemInput = {
 };
 
 export default function TakeOrderScreen() {
+  const theme = useColorScheme() ?? "light";
+  const styles = themedStyles(theme);
+
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -64,16 +69,13 @@ export default function TakeOrderScreen() {
 
   const loadOrders = async () => {
     const date = dayjs().format(DATE_FORMAT_FOR_DB);
-
     const res = await db.getAllAsync<any>(
       `SELECT orders.id, users.name as userName, orders.order_date, orders.order_time, orders.total_amount, orders.paid_amount
-         FROM orders
-         JOIN users ON users.id = orders.user_id
-         WHERE orders.order_date = ?`,
-      [date] // matches any datetime starting with today's date
+       FROM orders
+       JOIN users ON users.id = orders.user_id
+       WHERE orders.order_date = ?`,
+      [date]
     );
-
-    // console.log(res, "res");
     setOrders(res);
   };
 
@@ -155,183 +157,205 @@ export default function TakeOrderScreen() {
   };
 
   return (
-    <KeyboardAwareScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 40 }}
-      extraScrollHeight={100}
-      enableOnAndroid
-    >
-      <Text style={styles.title}>Take Order</Text>
+    <SafeAreaView style={styles.safeContainer}>
+      <KeyboardAwareScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        extraScrollHeight={100}
+        enableOnAndroid
+      >
+        <Text style={styles.title}>Take Order</Text>
 
-      <Text style={styles.label}>Select User</Text>
-      <DropDownPicker
-        listMode="MODAL"
-        modalTitle="Select a User"
-        open={userDropdownOpen}
-        value={selectedUserId}
-        items={[
-          { label: "-- Select User --", value: undefined },
-          ...users.map((user, ind) => ({
-            label: user.name,
-            value: user.id,
-            key: `user-${ind}-${user.id}`,
-          })),
-        ]}
-        setOpen={setUserDropdownOpen}
-        setValue={setSelectedUserId}
-        placeholder="Select User"
-        searchable={true}
-      />
+        <Text style={styles.label}>Select User</Text>
+        <DropDownPicker
+          listMode="MODAL"
+          modalTitle="Select a User"
+          open={userDropdownOpen}
+          value={selectedUserId}
+          items={[
+            { label: "-- Select User --", value: undefined },
+            ...users.map((user) => ({
+              label: user.name,
+              value: user.id,
+            })),
+          ]}
+          setOpen={setUserDropdownOpen}
+          setValue={setSelectedUserId}
+          placeholder="Select User"
+          searchable
+          style={styles.dropdown}
+          dropDownContainerStyle={styles.dropdownList}
+        />
 
-      <Text style={styles.label}>Items</Text>
-      {orderItems.map((item, index) => (
-        <View
-          key={`orderItem-${index}-${item.itemId ?? Math.random()}`}
-          style={styles.itemRow}
-        >
-          <View style={{ flex: 1 }}>
+        <Text style={styles.label}>Items</Text>
+        {orderItems.map((item, index) => (
+          <View key={index} style={styles.itemRow}>
             <DropDownPicker
               listMode="MODAL"
               modalTitle="Select an Item"
               open={item.dropdownOpen || false}
               value={item.itemId}
-              items={items.map((i, ind) => ({
+              items={items.map((i) => ({
                 label: `${i.name} - Rs ${i.amount}`,
                 value: i.id,
-                key: `item-${ind}-${i.id}`,
               }))}
               setOpen={(val) => {
                 const updated = [...orderItems];
                 updated[index].dropdownOpen =
                   typeof val === "function"
-                    ? val(updated[index].dropdownOpen ?? false)
+                    ? val(item.dropdownOpen || false)
                     : val;
                 setOrderItems(updated);
               }}
               setValue={(callback) => {
                 const updated = [...orderItems];
-                const newValue = callback(item.itemId);
-                updated[index].itemId = newValue;
+                updated[index].itemId = callback(item.itemId);
                 setOrderItems(updated);
               }}
               placeholder="Select Item"
-              searchable={true}
-              style={{ flex: 1 }}
-              dropDownContainerStyle={{ width: "80%" }}
+              searchable
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownList}
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Qty"
+              placeholderTextColor="#888"
+              keyboardType="numeric"
+              value={item.quantity.toString()}
+              onChangeText={(val) => handleItemChange(index, "quantity", val)}
+            />
+            {index > 0 && (
+              <TouchableOpacity onPress={() => removeOrderItem(index)}>
+                <Text style={styles.remove}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
+        ))}
 
-          <TextInput
-            style={[styles.input, { width: 80, marginLeft: 10 }]}
-            placeholder="Qty"
-            keyboardType="numeric"
-            value={item.quantity.toString()}
-            onChangeText={(val) => handleItemChange(index, "quantity", val)}
-          />
+        <TouchableOpacity onPress={addOrderItem} style={styles.addButton}>
+          <Text style={styles.addButtonText}>+ Add Item</Text>
+        </TouchableOpacity>
 
-          {index > 0 && (
-            <TouchableOpacity onPress={() => removeOrderItem(index)}>
-              <Text style={styles.remove}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ))}
+        <Text style={styles.total}>Total: Rs {totalAmount}</Text>
 
-      <TouchableOpacity onPress={addOrderItem} style={styles.addButton}>
-        <Text style={styles.addButtonText}>+ Add Item</Text>
-      </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          placeholder="Paid Amount"
+          placeholderTextColor="#888"
+          keyboardType="numeric"
+          value={paidAmount}
+          onChangeText={setPaidAmount}
+        />
 
-      <Text style={styles.total}>Total: Rs {totalAmount}</Text>
+        <Button title="Save Order" onPress={handleSaveOrder} />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Paid Amount"
-        keyboardType="numeric"
-        value={paidAmount}
-        onChangeText={setPaidAmount}
-      />
+        <Text style={[styles.label, { marginTop: 30 }]}>Today's Orders</Text>
+        {orders.length === 0 ? (
+          <Text style={styles.text}>No orders yet.</Text>
+        ) : (
+          orders.map((order) => {
+            const diff = order.paid_amount - order.total_amount;
+            let statusText = "Paid in full";
+            let statusColor = "green";
 
-      <Button title="Save Order" onPress={handleSaveOrder} />
+            if (diff < 0) statusText = `Remaining: Rs ${Math.abs(diff)}`;
+            else if (diff > 0) statusText = `Advance: Rs ${diff}`;
 
-      <Text style={[styles.label, { marginTop: 30 }]}>Todays Orders</Text>
-
-      {orders.length === 0 ? (
-        <Text>No orders yet.</Text>
-      ) : (
-        orders.map((order) => {
-          const diff = order.paid_amount - order.total_amount;
-          let statusText = "Paid in full";
-          let statusColor = "green";
-
-          if (diff < 0) {
-            statusText = `Remaining: Rs ${Math.abs(diff)}`;
-            statusColor = "red";
-          } else if (diff > 0) {
-            statusText = `You have: Rs ${diff} balance`;
-            statusColor = "orange";
-          }
-
-          return (
-            <View
-              key={`order-${order.id}-${order.order_time}`}
-              style={styles.orderItem}
-            >
-              <Text style={styles.orderText}>
-                👤 {order.userName} - Rs {order.total_amount} (Paid: Rs
-                {order.paid_amount})
-              </Text>
-              <Text style={{ color: "gray", fontSize: 12 }}>
-                ⏰ {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
-              </Text>
-              <Text style={{ color: "gray", fontSize: 12 }}>
-                ⏰ {order.order_date}
-              </Text>
-              <Text style={{ color: statusColor, fontWeight: "bold" }}>
-                {statusText}
-              </Text>
-            </View>
-          );
-        })
-      )}
-    </KeyboardAwareScrollView>
+            return (
+              <View key={order.id} style={styles.orderItem}>
+                <Text style={styles.text}>
+                  👤 {order.userName} - Rs {order.total_amount} (Paid: Rs
+                  {order.paid_amount})
+                </Text>
+                <Text style={[styles.text, { fontSize: 12 }]}>
+                  ⏰ {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
+                </Text>
+                <Text style={[styles.text, { fontSize: 12 }]}>
+                  📅 {order.order_date}
+                </Text>
+                <Text style={{ color: statusColor, fontWeight: "bold" }}>
+                  {statusText}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: "600", marginTop: 15 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-  },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  addButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#007bff",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 4,
-    marginBottom: 10,
-  },
-  addButtonText: { color: "#fff", fontWeight: "600" },
-  remove: { fontSize: 20, color: "red", marginLeft: 10 },
-  total: { fontSize: 18, fontWeight: "bold", marginVertical: 10 },
-  orderItem: {
-    backgroundColor: "#f1f1f1",
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-  orderText: {
-    fontSize: 14,
-  },
-});
+const themedStyles = (theme: "light" | "dark") =>
+  StyleSheet.create({
+    safeContainer: {
+      flex: 1,
+      backgroundColor: theme === "dark" ? "#121212" : "#fff",
+    },
+    container: {
+      flex: 1,
+      padding: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: theme === "dark" ? "#fff" : "#000",
+      marginBottom: 20,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme === "dark" ? "#eee" : "#111",
+      marginTop: 15,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme === "dark" ? "#555" : "#ccc",
+      backgroundColor: theme === "dark" ? "#222" : "#fff",
+      color: theme === "dark" ? "#fff" : "#000",
+      padding: 10,
+      borderRadius: 6,
+      marginBottom: 10,
+    },
+    dropdown: {
+      backgroundColor: theme === "dark" ? "#222" : "#fff",
+      borderColor: theme === "dark" ? "#555" : "#ccc",
+    },
+    dropdownList: {
+      backgroundColor: theme === "dark" ? "#222" : "#fff",
+    },
+    itemRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 10,
+      gap: 10,
+    },
+    addButton: {
+      backgroundColor: "#007bff",
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 4,
+      marginBottom: 10,
+      alignSelf: "flex-start",
+    },
+    addButtonText: {
+      color: "#fff",
+      fontWeight: "600",
+    },
+    total: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginVertical: 10,
+      color: theme === "dark" ? "#fff" : "#000",
+    },
+    remove: { fontSize: 20, color: "red" },
+    orderItem: {
+      backgroundColor: theme === "dark" ? "#1e1e1e" : "#f1f1f1",
+      padding: 10,
+      borderRadius: 6,
+      marginBottom: 8,
+    },
+    text: {
+      color: theme === "dark" ? "#ddd" : "#333",
+    },
+  });
