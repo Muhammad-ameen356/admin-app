@@ -1,15 +1,20 @@
 import { Entypo, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { scheduleWeeklyBackupReminder } from "../utils/notification";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const themeColors = Colors[colorScheme ?? "light"];
+
+  useEffect(() => {
+    scheduleWeeklyBackupReminder();
+  }, []);
 
   return (
     <SafeAreaView
@@ -40,7 +45,7 @@ export default function TabLayout() {
               elevation: 10,
             },
             android: {
-              height: 70,
+              height: 75,
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               backgroundColor: themeColors.background,
@@ -101,6 +106,15 @@ export default function TabLayout() {
             title: "History",
             tabBarIcon: ({ color }) => (
               <Ionicons name="time" size={22} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: "Settings",
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="settings" size={22} color={color} />
             ),
           }}
         />

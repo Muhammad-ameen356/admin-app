@@ -1,8 +1,9 @@
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import { dbName } from "@/constants/DBConstants";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
 export const exportDb = async () => {
-  const dbUri = `${FileSystem.documentDirectory}SQLite/mydb.db`;
+  const dbUri = `${FileSystem.documentDirectory}SQLite/${dbName}`;
   const dest = `${FileSystem.documentDirectory}mydb-exported.db`;
 
   try {
