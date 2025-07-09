@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -27,11 +28,19 @@ type OrderItemInput = {
   quantity: number;
   dropdownOpen?: boolean;
 };
+type Order = {
+  id: number;
+  userName: string;
+  employeeId: number;
+  order_date: string;
+  order_time: string;
+  total_amount: number;
+  paid_amount: number;
+};
 
 export default function TakeOrderScreen() {
   const themeForStyle = useColorScheme() ?? "light";
   const styles = themedStyles(themeForStyle);
-
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
@@ -43,8 +52,9 @@ export default function TakeOrderScreen() {
   ]);
   const [paidAmount, setPaidAmount] = useState("");
   const [totalAmount, setTotalAmount] = useState(0);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -73,8 +83,8 @@ export default function TakeOrderScreen() {
 
   const loadOrders = async () => {
     const date = dayjs().format(DATE_FORMAT_FOR_DB);
-    const res = await db.getAllAsync<any>(
-      `SELECT orders.id, users.name as userName, orders.order_date, orders.order_time, orders.total_amount, orders.paid_amount
+    const res = await db.getAllAsync<Order>(
+      `SELECT orders.id, users.name as userName, users.employeeId as employeeId, orders.order_date, orders.order_time, orders.total_amount, orders.paid_amount
        FROM orders
        JOIN users ON users.id = orders.user_id
        WHERE orders.order_date = ?`,
@@ -126,25 +136,48 @@ export default function TakeOrderScreen() {
     const paid = parseInt(paidAmount) || 0;
 
     try {
-      const now = dayjs();
-      const orderDate = now.format(DATE_FORMAT_FOR_DB);
-      const orderTime = now.format("HH:mm:ss");
-
-      const result = await db.runAsync(
-        "INSERT INTO orders (user_id, order_date, order_time, total_amount, paid_amount) VALUES (?, ?, ?, ?, ?)",
-        [selectedUserId, orderDate, orderTime, totalAmount, paid]
-      );
-
-      const orderId = result.lastInsertRowId;
-
-      for (const entry of orderItems) {
+      if (editingOrderId) {
+        // UPDATE MODE
         await db.runAsync(
-          `INSERT INTO order_items (order_id, item_id, quantity) VALUES (?, ?, ?)`,
-          [orderId, entry.itemId, entry.quantity]
+          `UPDATE orders SET user_id = ?, total_amount = ?, paid_amount = ? WHERE id = ?`,
+          [selectedUserId, totalAmount, paid, editingOrderId]
         );
+
+        await db.runAsync(`DELETE FROM order_items WHERE order_id = ?`, [
+          editingOrderId,
+        ]);
+
+        for (const entry of orderItems) {
+          await db.runAsync(
+            `INSERT INTO order_items (order_id, item_id, quantity) VALUES (?, ?, ?)`,
+            [editingOrderId, entry.itemId, entry.quantity]
+          );
+        }
+
+        Alert.alert("Order updated successfully");
+      } else {
+        // CREATE MODE
+        const now = dayjs();
+        const orderDate = now.format(DATE_FORMAT_FOR_DB);
+        const orderTime = now.format("HH:mm:ss");
+
+        const result = await db.runAsync(
+          "INSERT INTO orders (user_id, order_date, order_time, total_amount, paid_amount) VALUES (?, ?, ?, ?, ?)",
+          [selectedUserId, orderDate, orderTime, totalAmount, paid]
+        );
+
+        const orderId = result.lastInsertRowId;
+
+        for (const entry of orderItems) {
+          await db.runAsync(
+            `INSERT INTO order_items (order_id, item_id, quantity) VALUES (?, ?, ?)`,
+            [orderId, entry.itemId, entry.quantity]
+          );
+        }
+
+        Alert.alert("Order saved");
       }
 
-      Alert.alert("Order saved");
       resetForm();
       await loadOrders();
     } catch (err) {
@@ -153,17 +186,44 @@ export default function TakeOrderScreen() {
     }
   };
 
+  const handleEditOrder = async (orderId: number) => {
+    const order = await db.getFirstAsync<any>(
+      `SELECT * FROM orders WHERE id = ?`,
+      [orderId]
+    );
+
+    const items = await db.getAllAsync<any>(
+      `SELECT item_id, quantity FROM order_items WHERE order_id = ?`,
+      [orderId]
+    );
+
+    setSelectedUserId(order.user_id);
+    setPaidAmount(order.paid_amount.toString());
+    setTotalAmount(order.total_amount);
+    setOrderItems(
+      items.map((item) => ({
+        itemId: item.item_id,
+        quantity: item.quantity,
+        dropdownOpen: false,
+      }))
+    );
+    setEditingOrderId(orderId);
+  };
+
   const resetForm = () => {
     setSelectedUserId(null);
     setOrderItems([{ itemId: null, quantity: 1, dropdownOpen: false }]);
     setPaidAmount("");
     setTotalAmount(0);
+    setEditingOrderId(null);
   };
 
   return (
     <KeyboardAwareScrollView enableOnAndroid>
       <SafeAreaView style={styles.safeContainer}>
-        <Text style={styles.title}>Take Order</Text>
+        <Text style={styles.title}>
+          {editingOrderId ? "Update Order" : "Take Order"}
+        </Text>
 
         <Text style={styles.label}>Select User</Text>
         <DropDownPicker
@@ -190,18 +250,10 @@ export default function TakeOrderScreen() {
             backgroundColor: theme.card,
             borderColor: theme.border,
           }}
-          labelStyle={{
-            color: theme.text,
-          }}
-          textStyle={{
-            color: theme.text,
-          }}
-          placeholderStyle={{
-            color: theme.text,
-          }}
-          searchTextInputStyle={{
-            color: theme.text,
-          }}
+          labelStyle={{ color: theme.text }}
+          textStyle={{ color: theme.text }}
+          placeholderStyle={{ color: theme.text }}
+          searchTextInputStyle={{ color: theme.text }}
           modalContentContainerStyle={{
             backgroundColor: theme.background,
           }}
@@ -221,7 +273,7 @@ export default function TakeOrderScreen() {
                   label: `${i.name} - Rs ${i.amount}`,
                   value: i.id,
                 }))}
-                setOpen={(val) => {
+                setOpen={(val: any) => {
                   const updated = [...orderItems];
                   updated[index].dropdownOpen =
                     typeof val === "function"
@@ -275,7 +327,9 @@ export default function TakeOrderScreen() {
                 placeholderTextColor="#888"
                 keyboardType="numeric"
                 value={item.quantity.toString()}
-                onChangeText={(val) => handleItemChange(index, "quantity", val)}
+                onChangeText={(val: any) =>
+                  handleItemChange(index, "quantity", val)
+                }
               />
 
               <TouchableOpacity
@@ -315,8 +369,18 @@ export default function TakeOrderScreen() {
           onChangeText={setPaidAmount}
         />
 
-        <Button title="Save Order" onPress={handleSaveOrder} />
+        <Button
+          color={editingOrderId ? "orange" : ""}
+          title={editingOrderId ? "Update Order" : "Save Order"}
+          onPress={handleSaveOrder}
+        />
+        {editingOrderId && (
+          <TouchableOpacity onPress={resetForm} style={styles.cancelButton}>
+            <Text style={styles.cancelButtonText}>CANCEL UPDATE</Text>
+          </TouchableOpacity>
+        )}
 
+        {/* Display Orders */}
         <Text style={[styles.label, { marginTop: 30 }]}>Today Orders</Text>
         {orders.length === 0 ? (
           <Text style={styles.text}>No orders yet.</Text>
@@ -334,21 +398,32 @@ export default function TakeOrderScreen() {
               diff === 0 ? "green" : diff < 0 ? "red" : "orange";
 
             return (
-              <View key={order.id} style={styles.orderItem}>
-                <Text style={styles.text}>
-                  👤 {order.userName} - Rs {order.total_amount} (Paid: Rs
+              <TouchableOpacity
+                key={order.id}
+                onPress={() => Alert.alert("Hold to edit this order")}
+                onLongPress={() => {
+                  Vibration.vibrate(100); // vibrate for 50 milliseconds
+                  handleEditOrder(order.id);
+                }}
+                style={styles.orderItem}
+              >
+                <Text style={[styles.text, {fontWeight: "bold"}]}>
+                  👤 {order.userName} - {order.employeeId}
+                </Text>
+                <Text>
+                  💸 Rs {order.total_amount} (Paid: Rs
                   {order.paid_amount})
                 </Text>
-                <Text style={[styles.text, { fontSize: 12 }]}>
+                <Text style={[styles.text, { fontSize: 15 }]}>
                   ⏰ {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
                 </Text>
-                <Text style={[styles.text, { fontSize: 12 }]}>
+                <Text style={[styles.text, { fontSize: 15 }]}>
                   📅 {order.order_date}
                 </Text>
                 <Text style={{ color: statusColor, fontWeight: "bold" }}>
                   {statusText}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
@@ -459,5 +534,18 @@ const themedStyles = (theme: "light" | "dark") =>
       textAlign: "center",
       color: theme === "dark" ? "#fff" : "#000",
       paddingVertical: 4,
+    },
+    cancelButton: {
+      marginTop: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: "#aaa",
+      borderRadius: 4,
+    },
+
+    cancelButtonText: {
+      color: "#fff",
+      fontWeight: "600",
+      textAlign: "center",
     },
   });
