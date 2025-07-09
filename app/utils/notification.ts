@@ -18,6 +18,8 @@ export const scheduleWeeklyBackupReminder = async () => {
     return;
   }
 
+  await Notifications.cancelAllScheduledNotificationsAsync();
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "📦 Weekly Backup Reminder",
