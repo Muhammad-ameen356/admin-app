@@ -88,6 +88,8 @@ export default function UserCrudScreen() {
       setEditingId(null);
       await loadUsers();
     } catch (error: any) {
+      setName("");
+      setEmployeeId("");
       if (
         error.message.includes("UNIQUE constraint failed") &&
         error.message.includes("users.employeeId")

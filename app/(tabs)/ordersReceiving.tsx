@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFocusEffect } from "@react-navigation/native";
@@ -28,8 +29,11 @@ type OrderItemInput = {
 };
 
 export default function TakeOrderScreen() {
-  const theme = useColorScheme() ?? "light";
-  const styles = themedStyles(theme);
+  const themeForStyle = useColorScheme() ?? "light";
+  const styles = themedStyles(themeForStyle);
+
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -170,7 +174,7 @@ export default function TakeOrderScreen() {
           items={[
             { label: "-- Select User --", value: undefined },
             ...users.map((user) => ({
-              label: user.name,
+              label: `${user.name} - ${user.employeeId}`,
               value: user.id,
             })),
           ]}
@@ -178,8 +182,29 @@ export default function TakeOrderScreen() {
           setValue={setSelectedUserId}
           placeholder="Select User"
           searchable
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownList}
+          style={[
+            styles.dropdown,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+          dropDownContainerStyle={{
+            backgroundColor: theme.card,
+            borderColor: theme.border,
+          }}
+          labelStyle={{
+            color: theme.text,
+          }}
+          textStyle={{
+            color: theme.text,
+          }}
+          placeholderStyle={{
+            color: theme.text,
+          }}
+          searchTextInputStyle={{
+            color: theme.text,
+          }}
+          modalContentContainerStyle={{
+            backgroundColor: theme.background,
+          }}
         />
 
         <Text style={styles.label}>Items</Text>
@@ -211,8 +236,21 @@ export default function TakeOrderScreen() {
                 }}
                 placeholder="Select Item"
                 searchable
-                style={styles.dropdown}
-                dropDownContainerStyle={styles.dropdownList}
+                style={[
+                  styles.dropdown,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+                dropDownContainerStyle={{
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                }}
+                labelStyle={{ color: theme.text }}
+                textStyle={{ color: theme.text }}
+                placeholderStyle={{ color: theme.text }}
+                searchTextInputStyle={{ color: theme.text }}
+                modalContentContainerStyle={{
+                  backgroundColor: theme.background,
+                }}
               />
             </View>
 
