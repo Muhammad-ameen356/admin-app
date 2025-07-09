@@ -31,6 +31,7 @@ type OrderItemInput = {
 type Order = {
   id: number;
   userName: string;
+  employeeId: number;
   order_date: string;
   order_time: string;
   total_amount: number;
@@ -83,7 +84,7 @@ export default function TakeOrderScreen() {
   const loadOrders = async () => {
     const date = dayjs().format(DATE_FORMAT_FOR_DB);
     const res = await db.getAllAsync<Order>(
-      `SELECT orders.id, users.name as userName, orders.order_date, orders.order_time, orders.total_amount, orders.paid_amount
+      `SELECT orders.id, users.name as userName, users.employeeId as employeeId, orders.order_date, orders.order_time, orders.total_amount, orders.paid_amount
        FROM orders
        JOIN users ON users.id = orders.user_id
        WHERE orders.order_date = ?`,
@@ -406,14 +407,17 @@ export default function TakeOrderScreen() {
                 }}
                 style={styles.orderItem}
               >
-                <Text style={styles.text}>
-                  👤 {order.userName} - Rs {order.total_amount} (Paid: Rs
+                <Text style={[styles.text, {fontWeight: "bold"}]}>
+                  👤 {order.userName} - {order.employeeId}
+                </Text>
+                <Text>
+                  💸 Rs {order.total_amount} (Paid: Rs
                   {order.paid_amount})
                 </Text>
-                <Text style={[styles.text, { fontSize: 12 }]}>
+                <Text style={[styles.text, { fontSize: 15 }]}>
                   ⏰ {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
                 </Text>
-                <Text style={[styles.text, { fontSize: 12 }]}>
+                <Text style={[styles.text, { fontSize: 15 }]}>
                   📅 {order.order_date}
                 </Text>
                 <Text style={{ color: statusColor, fontWeight: "bold" }}>
