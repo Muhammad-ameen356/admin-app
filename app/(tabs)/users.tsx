@@ -88,6 +88,8 @@ export default function UserCrudScreen() {
       setEditingId(null);
       await loadUsers();
     } catch (error: any) {
+      setName("");
+      setEmployeeId("");
       if (
         error.message.includes("UNIQUE constraint failed") &&
         error.message.includes("users.employeeId")
@@ -162,8 +164,10 @@ export default function UserCrudScreen() {
           style={styles.input}
         />
 
-        <ThemedView style={styles.buttonGroup}>
+        <ThemedView style={{ marginBottom: 8 }}>
           <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
+        </ThemedView>
+        <ThemedView>
           {editingId !== null && (
             <Button title="Cancel" onPress={cancelEdit} color="gray" />
           )}
@@ -183,9 +187,9 @@ export default function UserCrudScreen() {
                 <TouchableOpacity onPress={() => handleEdit(item)}>
                   <ThemedText style={styles.edit}>Edit</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                {/* <TouchableOpacity onPress={() => handleDelete(item.id)}>
                   <ThemedText style={styles.delete}>Delete</ThemedText>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </ThemedView>
             </ThemedView>
           )}
@@ -223,11 +227,6 @@ const getStyles = (theme: "light" | "dark") =>
       marginBottom: 10,
       color: theme === "dark" ? "#fff" : "#000",
       backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
-    },
-    buttonGroup: {
-      flexDirection: "row",
-      gap: 10,
-      marginBottom: 10,
     },
     row: {
       padding: 12,

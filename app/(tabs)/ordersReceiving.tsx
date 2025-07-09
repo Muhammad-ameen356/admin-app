@@ -1,3 +1,4 @@
+import { Colors } from "@/constants/Colors";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFocusEffect } from "@react-navigation/native";
@@ -28,8 +29,11 @@ type OrderItemInput = {
 };
 
 export default function TakeOrderScreen() {
-  const theme = useColorScheme() ?? "light";
-  const styles = themedStyles(theme);
+  const themeForStyle = useColorScheme() ?? "light";
+  const styles = themedStyles(themeForStyle);
+
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
   const [users, setUsers] = useState<User[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -157,13 +161,8 @@ export default function TakeOrderScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <KeyboardAwareScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        extraScrollHeight={100}
-        enableOnAndroid
-      >
+    <KeyboardAwareScrollView enableOnAndroid>
+      <SafeAreaView style={styles.safeContainer}>
         <Text style={styles.title}>Take Order</Text>
 
         <Text style={styles.label}>Select User</Text>
@@ -175,7 +174,7 @@ export default function TakeOrderScreen() {
           items={[
             { label: "-- Select User --", value: undefined },
             ...users.map((user) => ({
-              label: user.name,
+              label: `${user.name} - ${user.employeeId}`,
               value: user.id,
             })),
           ]}
@@ -183,50 +182,118 @@ export default function TakeOrderScreen() {
           setValue={setSelectedUserId}
           placeholder="Select User"
           searchable
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownList}
+          style={[
+            styles.dropdown,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+          dropDownContainerStyle={{
+            backgroundColor: theme.card,
+            borderColor: theme.border,
+          }}
+          labelStyle={{
+            color: theme.text,
+          }}
+          textStyle={{
+            color: theme.text,
+          }}
+          placeholderStyle={{
+            color: theme.text,
+          }}
+          searchTextInputStyle={{
+            color: theme.text,
+          }}
+          modalContentContainerStyle={{
+            backgroundColor: theme.background,
+          }}
         />
 
         <Text style={styles.label}>Items</Text>
         {orderItems.map((item, index) => (
           <View key={index} style={styles.itemRow}>
-            <DropDownPicker
-              listMode="MODAL"
-              modalTitle="Select an Item"
-              open={item.dropdownOpen || false}
-              value={item.itemId}
-              items={items.map((i) => ({
-                label: `${i.name} - Rs ${i.amount}`,
-                value: i.id,
-              }))}
-              setOpen={(val) => {
-                const updated = [...orderItems];
-                updated[index].dropdownOpen =
-                  typeof val === "function"
-                    ? val(item.dropdownOpen || false)
-                    : val;
-                setOrderItems(updated);
-              }}
-              setValue={(callback) => {
-                const updated = [...orderItems];
-                updated[index].itemId = callback(item.itemId);
-                setOrderItems(updated);
-              }}
-              placeholder="Select Item"
-              searchable
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownList}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Qty"
-              placeholderTextColor="#888"
-              keyboardType="numeric"
-              value={item.quantity.toString()}
-              onChangeText={(val) => handleItemChange(index, "quantity", val)}
-            />
-            {index > 0 && (
-              <TouchableOpacity onPress={() => removeOrderItem(index)}>
+            {/* Item Dropdown */}
+            <View style={{ flex: 1 }}>
+              <DropDownPicker
+                listMode="MODAL"
+                modalTitle="Select an Item"
+                open={item.dropdownOpen || false}
+                value={item.itemId}
+                items={items.map((i) => ({
+                  label: `${i.name} - Rs ${i.amount}`,
+                  value: i.id,
+                }))}
+                setOpen={(val) => {
+                  const updated = [...orderItems];
+                  updated[index].dropdownOpen =
+                    typeof val === "function"
+                      ? val(item.dropdownOpen || false)
+                      : val;
+                  setOrderItems(updated);
+                }}
+                setValue={(callback) => {
+                  const updated = [...orderItems];
+                  updated[index].itemId = callback(item.itemId);
+                  setOrderItems(updated);
+                }}
+                placeholder="Select Item"
+                searchable
+                style={[
+                  styles.dropdown,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+                dropDownContainerStyle={{
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                }}
+                labelStyle={{ color: theme.text }}
+                textStyle={{ color: theme.text }}
+                placeholderStyle={{ color: theme.text }}
+                searchTextInputStyle={{ color: theme.text }}
+                modalContentContainerStyle={{
+                  backgroundColor: theme.background,
+                }}
+              />
+            </View>
+
+            {/* Quantity Controls */}
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                onPress={() =>
+                  handleItemChange(
+                    index,
+                    "quantity",
+                    item.quantity > 1 ? item.quantity - 1 : 1
+                  )
+                }
+                style={styles.qtyButton}
+              >
+                <Text style={styles.qtyButtonText}>−</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.qtyInput}
+                placeholder="Qty"
+                placeholderTextColor="#888"
+                keyboardType="numeric"
+                value={item.quantity.toString()}
+                onChangeText={(val) => handleItemChange(index, "quantity", val)}
+              />
+
+              <TouchableOpacity
+                onPress={() =>
+                  handleItemChange(index, "quantity", item.quantity + 1)
+                }
+                style={styles.qtyButton}
+              >
+                <Text style={styles.qtyButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Remove Button */}
+            {orderItems.length > 1 && (
+              <TouchableOpacity
+                onPress={() => removeOrderItem(index)}
+                style={{ marginLeft: 8 }}
+              >
                 <Text style={styles.remove}>✕</Text>
               </TouchableOpacity>
             )}
@@ -250,17 +317,21 @@ export default function TakeOrderScreen() {
 
         <Button title="Save Order" onPress={handleSaveOrder} />
 
-        <Text style={[styles.label, { marginTop: 30 }]}>Today's Orders</Text>
+        <Text style={[styles.label, { marginTop: 30 }]}>Today Orders</Text>
         {orders.length === 0 ? (
           <Text style={styles.text}>No orders yet.</Text>
         ) : (
           orders.map((order) => {
             const diff = order.paid_amount - order.total_amount;
-            let statusText = "Paid in full";
-            let statusColor = "green";
+            let statusText =
+              diff === 0
+                ? "✅ Settled"
+                : diff < 0
+                ? `❌ Pending: Rs ${Math.abs(diff)}`
+                : `💰 Extra Paid: Rs ${diff}`;
 
-            if (diff < 0) statusText = `Remaining: Rs ${Math.abs(diff)}`;
-            else if (diff > 0) statusText = `Advance: Rs ${diff}`;
+            let statusColor =
+              diff === 0 ? "green" : diff < 0 ? "red" : "orange";
 
             return (
               <View key={order.id} style={styles.orderItem}>
@@ -281,8 +352,8 @@ export default function TakeOrderScreen() {
             );
           })
         )}
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -291,16 +362,12 @@ const themedStyles = (theme: "light" | "dark") =>
     safeContainer: {
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
-    },
-    container: {
-      flex: 1,
       padding: 20,
     },
     title: {
       fontSize: 24,
       fontWeight: "bold",
       color: theme === "dark" ? "#fff" : "#000",
-      marginBottom: 20,
     },
     label: {
       fontSize: 16,
@@ -324,12 +391,12 @@ const themedStyles = (theme: "light" | "dark") =>
     dropdownList: {
       backgroundColor: theme === "dark" ? "#222" : "#fff",
     },
-    itemRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 10,
-      gap: 10,
-    },
+    // itemRow: {
+    //   flexDirection: "row",
+    //   alignItems: "center",
+    //   marginBottom: 10,
+    //   gap: 10,
+    // },
     addButton: {
       backgroundColor: "#007bff",
       paddingHorizontal: 10,
@@ -357,5 +424,40 @@ const themedStyles = (theme: "light" | "dark") =>
     },
     text: {
       color: theme === "dark" ? "#ddd" : "#333",
+    },
+    itemRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+
+    quantityContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginLeft: 8,
+      borderWidth: 1,
+      borderRadius: 6,
+      borderColor: theme === "dark" ? "#555" : "#ccc",
+      backgroundColor: theme === "dark" ? "#222" : "#fff",
+    },
+
+    qtyButton: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    qtyButtonText: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme === "dark" ? "#fff" : "#000",
+    },
+
+    qtyInput: {
+      width: 40,
+      textAlign: "center",
+      color: theme === "dark" ? "#fff" : "#000",
+      paddingVertical: 4,
     },
   });

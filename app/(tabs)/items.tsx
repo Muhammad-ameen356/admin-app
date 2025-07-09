@@ -191,8 +191,6 @@ const getStyles = (theme: "light" | "dark") =>
       color: theme === "dark" ? "#fff" : "#000",
     },
     buttonRow: {
-      flexDirection: "row",
-      gap: 10,
       marginBottom: 20,
     },
     itemRow: {

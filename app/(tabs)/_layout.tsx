@@ -6,7 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { scheduleWeeklyBackupReminder } from "../utils/notification";
+import { DrawerActions } from "@react-navigation/native";
+import { scheduleWeeklyBackupReminder } from "../../utils/notification";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -100,7 +101,7 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="orderHistory"
           options={{
             title: "History",
@@ -108,9 +109,15 @@ export default function TabLayout() {
               <Ionicons name="time" size={22} color={color} />
             ),
           }}
-        />
+        /> */}
         <Tabs.Screen
           name="settings"
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              e.preventDefault(); // Stop default navigation
+              navigation.dispatch(DrawerActions.openDrawer()); // Open drawer
+            },
+          })}
           options={{
             title: "Settings",
             tabBarIcon: ({ color }) => (
