@@ -7,8 +7,6 @@ import {
   Alert,
   Button,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -139,62 +137,71 @@ export default function UserCrudScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ThemedText style={styles.title}>
-          {editingId ? "Edit User" : "Add User"}
-        </ThemedText>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ThemedText style={styles.title}>
+        {editingId ? "Edit User" : "Add User"}
+      </ThemedText>
 
-        <TextInput
-          placeholder="Enter Name"
-          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#999"}
-          value={name}
-          onChangeText={setName}
-          style={styles.input}
-        />
+      <TextInput
+        placeholder="Enter Name"
+        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#999"}
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+      />
 
-        <TextInput
-          placeholder="Enter Employee ID"
-          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#999"}
-          value={employeeId}
-          onChangeText={setEmployeeId}
-          keyboardType="numeric"
-          style={styles.input}
-        />
+      <TextInput
+        placeholder="Enter Employee ID"
+        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#999"}
+        value={employeeId}
+        onChangeText={(text) => {
+          // Allow only digits (remove -, letters, etc.)
+          const digitsOnly = text.replace(/[^0-9]/g, "");
+          setEmployeeId(digitsOnly);
+        }}
+        keyboardType="numeric"
+        style={styles.input}
+      />
 
-        <ThemedView style={{ marginBottom: 8 }}>
-          <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
-        </ThemedView>
-        <ThemedView>
-          {editingId !== null && (
-            <Button title="Cancel" onPress={cancelEdit} color="gray" />
-          )}
-        </ThemedView>
+      <ThemedView style={{ marginBottom: 8 }}>
+        <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
+      </ThemedView>
+      <ThemedView>
+        {editingId !== null && (
+          <Button title="Cancel" onPress={cancelEdit} color="gray" />
+        )}
+      </ThemedView>
 
-        <ThemedText style={styles.subTitle}>Users</ThemedText>
-        <FlatList
-          data={users}
-          keyExtractor={(item) => item.id.toString()}
-          ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
-          renderItem={({ item }) => (
-            <ThemedView style={styles.row}>
-              <ThemedText>
-                {item.name} (Emp ID: {item.employeeId})
+      <ThemedText style={styles.subTitle}>Users</ThemedText>
+      <FlatList
+        data={users}
+        contentContainerStyle={{
+          backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#fff",
+        }}
+        showsVerticalScrollIndicator={false}
+        keyExtractor={(item) => item.id.toString()}
+        ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
+        renderItem={({ item }) => (
+          <ThemedView style={styles.card}>
+            <ThemedView style={{ flex: 1 }}>
+              <ThemedText style={styles.cardTitle}>{item.name}</ThemedText>
+              <ThemedText style={styles.cardSubTitle}>
+                Employee ID: {item.employeeId}
               </ThemedText>
-              <ThemedView style={styles.actions}>
-                <TouchableOpacity onPress={() => handleEdit(item)}>
-                  <ThemedText style={styles.edit}>Edit</ThemedText>
-                </TouchableOpacity>
-                {/* <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                  <ThemedText style={styles.delete}>Delete</ThemedText>
-                </TouchableOpacity> */}
-              </ThemedView>
             </ThemedView>
-          )}
-        />
-      </KeyboardAvoidingView>
+            <TouchableOpacity
+              onPress={() => handleEdit(item)}
+              style={styles.iconButton}
+            >
+              <Text style={styles.editIcon}>✏️</Text>
+            </TouchableOpacity>
+            {/* Uncomment to enable delete */}
+            {/* <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconButton}>
+      <Text style={styles.deleteIcon}>🗑️</Text>
+    </TouchableOpacity> */}
+          </ThemedView>
+        )}
+      />
     </SafeAreaView>
   );
 }
@@ -202,7 +209,7 @@ export default function UserCrudScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
-      padding: 20,
+      paddingHorizontal: 20,
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
     },
@@ -213,10 +220,10 @@ const getStyles = (theme: "light" | "dark") =>
       color: theme === "dark" ? "#fff" : "#000",
     },
     subTitle: {
+      padding: 10,
       fontSize: 18,
       fontWeight: "600",
-      marginTop: 30,
-      marginBottom: 10,
+
       color: theme === "dark" ? "#fff" : "#000",
     },
     input: {
@@ -242,5 +249,47 @@ const getStyles = (theme: "light" | "dark") =>
       textAlign: "center",
       marginTop: 20,
       color: theme === "dark" ? "#aaa" : "#888",
+    },
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme === "dark" ? "#1f1f1f" : "#f9f9f9",
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme === "dark" ? "#333" : "#ddd",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+
+    cardTitle: {
+      fontSize: 17,
+      fontWeight: "bold",
+      marginBottom: 4,
+      color: theme === "dark" ? "#fff" : "#222",
+    },
+
+    cardSubTitle: {
+      fontSize: 14,
+      color: theme === "dark" ? "#bbb" : "#666",
+    },
+
+    iconButton: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+
+    editIcon: {
+      fontSize: 20,
+      color: "#007bff",
+    },
+
+    deleteIcon: {
+      fontSize: 20,
+      color: "#d11a2a",
     },
   });

@@ -106,6 +106,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView
+      edges={["top"]}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       <ThemedText style={[styles.title, { color: theme.text }]}>
@@ -188,6 +189,7 @@ export default function HomeScreen() {
       <FlatList
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 0 }}
+        showsVerticalScrollIndicator={false}
         data={userBalances.filter((item) => {
           const balance = item.paid - item.total;
           if (balanceStatusFilter === "pending") return balance < 0;
