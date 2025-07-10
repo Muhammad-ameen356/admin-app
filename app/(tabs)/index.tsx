@@ -44,8 +44,10 @@ export default function HomeScreen() {
       useNewConnection: true,
     });
 
-    const condition = employeeId ? `WHERE u.employeeId = ${employeeId}` : "";
-
+    const condition = employeeId
+      ? `WHERE o.user_id IS NOT NULL AND u.employeeId = ${employeeId}`
+      : `WHERE o.user_id IS NOT NULL`;
+      
     const query = `
       SELECT 
         u.id,
@@ -54,7 +56,7 @@ export default function HomeScreen() {
         IFNULL(SUM(o.total_amount), 0) AS total,
         IFNULL(SUM(o.paid_amount), 0) AS paid
       FROM users u
-      LEFT JOIN orders o ON u.id = o.user_id
+      JOIN orders o ON u.id = o.user_id
       ${condition}
       GROUP BY u.id
       ORDER BY u.name
