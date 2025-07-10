@@ -112,58 +112,69 @@ export default function ItemScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ThemedView>
-        <ThemedText style={styles.title}>Manage Items</ThemedText>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ThemedText style={styles.title}>Manage Items</ThemedText>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Item Name"
-          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Amount"
-          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Item Name"
+        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
+        value={name}
+        onChangeText={setName}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Amount"
+        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
+        value={amount}
+        onChangeText={(text) => {
+          // Allow only digits (remove -, letters, etc.)
+          const digitsOnly = text.replace(/[^0-9]/g, "");
+          setAmount(digitsOnly);
+        }}
+        keyboardType="numeric"
+      />
 
-        <ThemedView style={styles.buttonRow}>
-          <Button
-            title={editingId ? "Update Item" : "Add Item"}
-            onPress={handleSave}
-          />
-          {editingId && (
-            <Button title="Cancel" color="gray" onPress={cancelEdit} />
-          )}
-        </ThemedView>
-
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id.toString()}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No items found</Text>
-          }
-          renderItem={({ item }) => (
-            <ThemedView style={styles.itemRow}>
-              <ThemedView style={{ flex: 1 }}>
-                <ThemedText style={styles.itemText}>{item.name}</ThemedText>
-                <ThemedText style={styles.itemSub}>Rs {item.amount}</ThemedText>
-              </ThemedView>
-              <TouchableOpacity onPress={() => handleEdit(item)}>
-                <ThemedText style={styles.editBtn}>✏️</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                <ThemedText style={styles.deleteBtn}>🗑️</ThemedText>
-              </TouchableOpacity>
-            </ThemedView>
-          )}
+      <ThemedView style={styles.buttonRow}>
+        <Button
+          title={editingId ? "Update Item" : "Add Item"}
+          onPress={handleSave}
         />
+        {editingId && (
+          <Button title="Cancel" color="gray" onPress={cancelEdit} />
+        )}
       </ThemedView>
+
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No items found</Text>
+        }
+        renderItem={({ item }) => (
+          <ThemedView style={styles.card}>
+            <ThemedView style={{ flex: 1 }}>
+              <ThemedText style={styles.cardTitle}>{item.name}</ThemedText>
+              <ThemedText style={styles.cardAmount}>
+                Rs {item.amount}
+              </ThemedText>
+            </ThemedView>
+            <TouchableOpacity
+              onPress={() => handleEdit(item)}
+              style={styles.iconButton}
+            >
+              <Text style={styles.editIcon}>✏️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDelete(item.id)}
+              style={styles.iconButton}
+            >
+              <Text style={styles.deleteIcon}>🗑️</Text>
+            </TouchableOpacity>
+          </ThemedView>
+        )}
+      />
     </SafeAreaView>
   );
 }
@@ -171,7 +182,7 @@ export default function ItemScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
-      padding: 20,
+      paddingHorizontal: 20,
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
     },
@@ -193,34 +204,53 @@ const getStyles = (theme: "light" | "dark") =>
     buttonRow: {
       marginBottom: 20,
     },
-    itemRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme === "dark" ? "#1e1e1e" : "#f3f3f3",
-      padding: 10,
-      marginBottom: 8,
-      borderRadius: 6,
-    },
-    itemText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: theme === "dark" ? "#fff" : "#000",
-    },
-    itemSub: {
-      color: theme === "dark" ? "#aaa" : "#555",
-    },
-    editBtn: {
-      fontSize: 18,
-      color: "#007bff",
-      marginRight: 10,
-    },
-    deleteBtn: {
-      fontSize: 18,
-      color: "#d11a2a",
-    },
+
     emptyText: {
       textAlign: "center",
       marginTop: 20,
       color: theme === "dark" ? "#aaa" : "#888",
+    },
+
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme === "dark" ? "#1f1f1f" : "#fafafa",
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme === "dark" ? "#333" : "#ddd",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+
+    cardTitle: {
+      fontSize: 17,
+      fontWeight: "bold",
+      marginBottom: 4,
+      color: theme === "dark" ? "#fff" : "#222",
+    },
+
+    cardAmount: {
+      fontSize: 15,
+      color: theme === "dark" ? "#aaa" : "#666",
+    },
+
+    iconButton: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+
+    editIcon: {
+      fontSize: 20,
+      color: "#007bff",
+    },
+
+    deleteIcon: {
+      fontSize: 20,
+      color: "#d11a2a",
     },
   });

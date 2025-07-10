@@ -13,7 +13,7 @@ import {
   Platform,
   StyleSheet,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -66,14 +66,17 @@ export default function OrderSummaryScreen() {
 
   const SummaryItem = ({ item }: { item: any }) => (
     <ThemedView style={styles.card}>
-      <ThemedText style={styles.cardText}>
-        🍽 {item.name}: {item.total}
-      </ThemedText>
+      <ThemedView style={styles.cardContent}>
+        <ThemedText style={styles.itemName}>🍽 {item.name}</ThemedText>
+        <View style={styles.totalBadge}>
+          <ThemedText style={styles.totalBadgeText}>{item.total}</ThemedText>
+        </View>
+      </ThemedView>
     </ThemedView>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ThemedText style={styles.title}>Order Summary</ThemedText>
 
       <ThemedText style={styles.dateLabel}>
@@ -98,6 +101,7 @@ export default function OrderSummaryScreen() {
         <FlatList
           data={summary}
           keyExtractor={(item, index) => index.toString()}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
           renderItem={({ item }) => <SummaryItem item={item} />}
         />
@@ -110,7 +114,7 @@ const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: 20,
+      paddingHorizontal: 20,
       backgroundColor: theme === "light" ? "#fff" : "#121212",
     },
     title: {
@@ -130,16 +134,46 @@ const getStyles = (theme: "light" | "dark") =>
       color: theme === "light" ? "#333" : "#bbb",
     },
     card: {
-      backgroundColor: theme === "light" ? "#f2f2f2" : "#1e1e1e",
+      backgroundColor: theme === "light" ? "#fff" : "#000",
       borderColor: theme === "light" ? "#ddd" : "#444",
       borderWidth: 1,
       padding: 12,
       marginBottom: 10,
       borderRadius: 8,
     },
+
     cardText: {
       fontSize: 16,
       fontWeight: "600",
       color: theme === "light" ? "#000" : "#fff",
+    },
+
+    cardContent: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+
+    itemName: {
+      fontSize: 16,
+      fontWeight: "600",
+      flex: 1,
+      color: theme === "light" ? "#000" : "#fff",
+    },
+
+    totalBadge: {
+      backgroundColor: theme === "light" ? "#007bff" : "#3b82f6",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 50,
+      minWidth: 40,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    totalBadgeText: {
+      color: "#fff",
+      fontWeight: "bold",
+      fontSize: 16,
     },
   });

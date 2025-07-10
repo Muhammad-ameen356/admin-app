@@ -366,7 +366,11 @@ export default function TakeOrderScreen() {
           placeholderTextColor="#888"
           keyboardType="numeric"
           value={paidAmount}
-          onChangeText={setPaidAmount}
+          onChangeText={(text) => {
+            // Allow only digits (remove -, letters, etc.)
+            const digitsOnly = text.replace(/[^0-9]/g, "");
+            setPaidAmount(digitsOnly);
+          }}
         />
 
         <Button
@@ -407,7 +411,7 @@ export default function TakeOrderScreen() {
                 }}
                 style={styles.orderItem}
               >
-                <Text style={[styles.text, {fontWeight: "bold"}]}>
+                <Text style={[styles.text, { fontWeight: "bold" }]}>
                   👤 {order.userName} - {order.employeeId}
                 </Text>
                 <Text>
