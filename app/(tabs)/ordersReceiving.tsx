@@ -1,3 +1,5 @@
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -56,6 +58,10 @@ export default function TakeOrderScreen() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
 
+  const [selectedUser, setSelectedUser] = useState<number | null>(null);
+  const [dropdownItems, setDropdownItems] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
@@ -73,6 +79,8 @@ export default function TakeOrderScreen() {
 
   const loadUsers = async () => {
     const res = await db.getAllAsync<User>("SELECT * FROM users");
+
+    setDropdownItems(res);
     setUsers(res);
   };
 
@@ -210,6 +218,40 @@ export default function TakeOrderScreen() {
     setEditingOrderId(orderId);
   };
 
+  const deleteOrder = async (orderId: number) => {
+    try {
+      await db.runAsync(`DELETE FROM order_items WHERE order_id = ?`, [
+        orderId,
+      ]);
+      await db.runAsync(`DELETE FROM orders WHERE id = ?`, [orderId]);
+
+      Alert.alert("Order deleted successfully", "آرڈر ڈلیٹ ہو گیا ہے۔");
+      await loadOrders();
+    } catch (err) {
+      console.error("Delete order error:", err);
+      Alert.alert("Error deleting order");
+    }
+  };
+
+  const handleDeleteOrder = (orderId: number) => {
+    Alert.alert(
+      "Delete Order",
+      "آپ اس آرڈر کو ڈلیٹ کرنا چاہتے ہیں۔",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: () => deleteOrder(orderId),
+          style: "destructive",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const resetForm = () => {
     setSelectedUserId(null);
     setOrderItems([{ itemId: null, quantity: 1, dropdownOpen: false }]);
@@ -234,6 +276,7 @@ export default function TakeOrderScreen() {
           items={[
             { label: "-- Select User --", value: undefined },
             ...users.map((user) => ({
+              key: `userDropdown-${user.id}`,
               label: `${user.name} - ${user.employeeId}`,
               value: user.id,
             })),
@@ -270,6 +313,7 @@ export default function TakeOrderScreen() {
                 open={item.dropdownOpen || false}
                 value={item.itemId}
                 items={items.map((i) => ({
+                  key: `itemDropdown-${i.id}`,
                   label: `${i.name} - Rs ${i.amount}`,
                   value: i.id,
                 }))}
@@ -384,52 +428,124 @@ export default function TakeOrderScreen() {
           </TouchableOpacity>
         )}
 
+        <ThemedView style={{ marginTop: 20 }}>
+          <ThemedText>Filter Order By User</ThemedText>
+          {/* Filter Order */}
+          <DropDownPicker
+            listMode="MODAL"
+            modalTitle="Select a User"
+            open={open}
+            value={selectedUser}
+            items={[
+              { label: "-- Select User --", value: undefined },
+              ...dropdownItems.map((user) => ({
+                key: `userDropdown-${user.id}`,
+                label: `${user.name} - ${user.employeeId}`,
+                value: user.employeeId,
+              })),
+            ]}
+            setOpen={setOpen}
+            setValue={setSelectedUser}
+            setItems={setDropdownItems}
+            placeholder="Filter by User"
+            searchable
+            style={[
+              styles.dropdown,
+              { backgroundColor: theme.card, borderColor: theme.border },
+            ]}
+            dropDownContainerStyle={{
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            }}
+            labelStyle={{ color: theme.text }}
+            textStyle={{ color: theme.text }}
+            placeholderStyle={{ color: theme.text }}
+            searchTextInputStyle={{ color: theme.text }}
+            modalContentContainerStyle={{
+              backgroundColor: theme.background,
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={() => setSelectedUser(null)}
+            style={styles.resetButton}
+          >
+            <Text style={{ fontWeight: "bold" }}>🔄 Reset Filter</Text>
+          </TouchableOpacity>
+        </ThemedView>
+
         {/* Display Orders */}
-        <Text style={[styles.label, { marginTop: 30 }]}>Today Orders</Text>
+        <Text style={[styles.label, { marginTop: 10 }]}>Today Orders</Text>
         {orders.length === 0 ? (
           <Text style={styles.text}>No orders yet.</Text>
         ) : (
-          orders.map((order) => {
-            const diff = order.paid_amount - order.total_amount;
-            let statusText =
-              diff === 0
-                ? "✅ Settled"
-                : diff < 0
-                ? `❌ Pending: Rs ${Math.abs(diff)}`
-                : `💰 Extra Paid: Rs ${diff}`;
+          orders
+            .filter((order) =>
+              selectedUser ? order.employeeId === selectedUser : true
+            )
+            .map((order) => {
+              const diff = order.paid_amount - order.total_amount;
+              let statusText =
+                diff === 0
+                  ? "✅ Settled"
+                  : diff < 0
+                  ? `❌ Pending: Rs ${Math.abs(diff)}`
+                  : `💰 Extra Paid: Rs ${diff}`;
 
-            let statusColor =
-              diff === 0 ? "green" : diff < 0 ? "red" : "orange";
+              let statusColor =
+                diff === 0 ? "green" : diff < 0 ? "red" : "orange";
 
-            return (
-              <TouchableOpacity
-                key={order.id}
-                onPress={() => Alert.alert("Hold to edit this order")}
-                onLongPress={() => {
-                  Vibration.vibrate(100); // vibrate for 50 milliseconds
-                  handleEditOrder(order.id);
-                }}
-                style={styles.orderItem}
-              >
-                <Text style={[styles.text, { fontWeight: "bold" }]}>
-                  👤 {order.userName} - {order.employeeId}
-                </Text>
-                <Text>
-                  💸 Rs {order.total_amount} (Paid: Rs
-                  {order.paid_amount})
-                </Text>
-                <Text style={[styles.text, { fontSize: 15 }]}>
-                  ⏰ {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
-                </Text>
-                <Text style={[styles.text, { fontSize: 15 }]}>
-                  📅 {order.order_date}
-                </Text>
-                <Text style={{ color: statusColor, fontWeight: "bold" }}>
-                  {statusText}
-                </Text>
-              </TouchableOpacity>
-            );
-          })
+              return (
+                <TouchableOpacity
+                  key={order.id}
+                  onPress={() =>
+                    Alert.alert("Hold to edit or delete this order")
+                  }
+                  onLongPress={() => {
+                    Vibration.vibrate(100);
+                    Alert.alert(
+                      "Edit or Delete Order",
+                      "آرڈر میں ترمیم کریں یا حذف کریں۔",
+                      [
+                        {
+                          text: "Cancel",
+                          style: "cancel",
+                        },
+                        {
+                          text: "Delete",
+                          onPress: () => handleDeleteOrder(order.id),
+                          style: "destructive",
+                        },
+                        {
+                          text: "Edit",
+                          onPress: () => handleEditOrder(order.id),
+                        },
+                      ],
+                      { cancelable: true }
+                    );
+                  }}
+                  style={styles.orderItem}
+                >
+                  <Text style={[styles.text, { fontWeight: "bold" }]}>
+                    👤 {order.userName} - {order.employeeId}
+                  </Text>
+                  <Text style={[styles.text, { fontWeight: "bold" }]}>
+                    💸 Rs {order.total_amount} (Paid: Rs
+                    {order.paid_amount})
+                  </Text>
+                  <Text style={[styles.text, { fontSize: 15 }]}>
+                    ⏰
+                    {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
+                  </Text>
+                  <Text style={[styles.text, { fontSize: 15 }]}>
+                    📅 {order.order_date}
+                  </Text>
+                  <Text style={{ color: statusColor, fontWeight: "bold" }}>
+                    {statusText}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })
         )}
       </SafeAreaView>
     </KeyboardAwareScrollView>
@@ -551,5 +667,12 @@ const themedStyles = (theme: "light" | "dark") =>
       color: "#fff",
       fontWeight: "600",
       textAlign: "center",
+    },
+    resetButton: {
+      alignSelf: "flex-end",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+      backgroundColor: "#eee",
     },
   });

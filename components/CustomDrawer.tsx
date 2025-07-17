@@ -1,6 +1,7 @@
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { exportDb } from "@/utils/exportDb";
 import { importDb } from "@/utils/importDb";
+import { toggleColorScheme } from "@/utils/toggleColorScheme";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
@@ -95,6 +96,25 @@ export default function CustomDrawer(props: any) {
           />
         )}
         onPress={handleImport}
+      />
+
+      <DrawerItem
+        label={`Switch to ${colorScheme === "dark" ? "Light" : "Dark"} Mode`}
+        labelStyle={{ color: textColor }}
+        icon={({ size }) => (
+          <Ionicons
+            name={colorScheme === "dark" ? "sunny-outline" : "moon-outline"}
+            size={size}
+            color={textColor}
+          />
+        )}
+        onPress={async () => {
+          await toggleColorScheme();
+          // Optionally force re-render or restart
+          // You can reload the app if you want to force theme update:
+          // import { DevSettings } from 'react-native';
+          // DevSettings.reload();
+        }}
       />
     </DrawerContentScrollView>
   );
