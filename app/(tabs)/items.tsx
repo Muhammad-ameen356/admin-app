@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { dbName } from "@/constants/DBConstants";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 

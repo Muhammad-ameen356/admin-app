@@ -2,6 +2,7 @@ import { Collapsible } from "@/components/Collapsible";
 import { ThemedText } from "@/components/ThemedText";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
@@ -13,7 +14,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

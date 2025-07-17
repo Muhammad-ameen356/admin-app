@@ -2,19 +2,13 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
-import {
-  Button,
-  FlatList,
-  Platform,
-  StyleSheet,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Button, FlatList, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
