@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 // Type for User
 type User = {
   id: number;
@@ -164,21 +163,18 @@ export default function UserCrudScreen() {
         style={styles.input}
       />
 
-      <ThemedView style={{ marginBottom: 8 }}>
-        <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
+      <ThemedView style={{ marginBottom: 20 }}>
+        <ThemedView>
+          <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
+        </ThemedView>
+        <ThemedView>
+          {editingId !== null && (
+            <Button title="Cancel" onPress={cancelEdit} color="gray" />
+          )}
+        </ThemedView>
       </ThemedView>
-      <ThemedView>
-        {editingId !== null && (
-          <Button title="Cancel" onPress={cancelEdit} color="gray" />
-        )}
-      </ThemedView>
-
-      <ThemedText style={styles.subTitle}>Users</ThemedText>
       <FlatList
         data={users}
-        contentContainerStyle={{
-          backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#fff",
-        }}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
@@ -210,6 +206,7 @@ export default function UserCrudScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
+      paddingTop: 18,
       paddingHorizontal: 20,
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
@@ -248,7 +245,6 @@ const getStyles = (theme: "light" | "dark") =>
     delete: { color: "#d11a2a" },
     empty: {
       textAlign: "center",
-      marginTop: 20,
       color: theme === "dark" ? "#aaa" : "#888",
     },
     card: {

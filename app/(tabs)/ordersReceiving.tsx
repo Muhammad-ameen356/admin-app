@@ -557,7 +557,7 @@ const themedStyles = (theme: "light" | "dark") =>
     safeContainer: {
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
-      padding: 20,
+      padding: 18,
     },
     title: {
       fontSize: 24,

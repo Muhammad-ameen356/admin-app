@@ -47,7 +47,7 @@ export default function HomeScreen() {
     const condition = employeeId
       ? `WHERE o.user_id IS NOT NULL AND u.employeeId = ${employeeId}`
       : `WHERE o.user_id IS NOT NULL`;
-      
+
     const query = `
       SELECT 
         u.id,
@@ -236,7 +236,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 20, paddingTop: 20, flex: 1 },
+  container: { paddingHorizontal: 20, paddingTop: 18, flex: 1,  },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
   dropdown: {
     marginBottom: 20,
@@ -264,13 +264,17 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    flexWrap: "wrap",
+    alignItems: "center",
     gap: 10,
     marginBottom: 20,
+    flexWrap: "nowrap", // ❗️Prevent wrapping
   },
+
   filterButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
+    flexShrink: 1, // ❗️Allow shrinking if needed
+    minWidth: 0, // ❗️Allow to shrink below content width if needed
   },
 });

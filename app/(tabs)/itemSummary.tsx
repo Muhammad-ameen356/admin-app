@@ -8,7 +8,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
-import { Button, FlatList, Platform, StyleSheet, View } from "react-native";
+import {
+  FlatList,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
@@ -72,13 +78,12 @@ export default function OrderSummaryScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ThemedText style={styles.title}>Order Summary</ThemedText>
-
-      <ThemedText style={styles.dateLabel}>
-        📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
-      </ThemedText>
-      <View style={{ marginBottom: 10 }}>
-        <Button title="Select Date" onPress={() => setShowPicker(true)} />
-      </View>
+      <TouchableOpacity onPress={() => setShowPicker(true)}>
+        <ThemedText style={{ fontWeight: 600 }}>Select Date</ThemedText>
+        <ThemedText style={styles.dateLabel}>
+          📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
+        </ThemedText>
+      </TouchableOpacity>
 
       {showPicker && (
         <DateTimePicker
@@ -89,17 +94,16 @@ export default function OrderSummaryScreen() {
         />
       )}
 
-      {summary.length === 0 ? (
-        <ThemedText style={styles.noData}>No orders found.</ThemedText>
-      ) : (
-        <FlatList
-          data={summary}
-          keyExtractor={(item, index) => index.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          renderItem={({ item }) => <SummaryItem item={item} />}
-        />
-      )}
+      <FlatList
+        data={summary}
+        ListEmptyComponent={
+          <ThemedText style={styles.noData}>No Item Found.</ThemedText>
+        }
+        keyExtractor={(item, index) => index.toString()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        renderItem={({ item }) => <SummaryItem item={item} />}
+      />
     </SafeAreaView>
   );
 }
@@ -107,6 +111,7 @@ export default function OrderSummaryScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
+      paddingTop: 18,
       flex: 1,
       paddingHorizontal: 20,
       backgroundColor: theme === "light" ? "#fff" : "#121212",
@@ -114,12 +119,11 @@ const getStyles = (theme: "light" | "dark") =>
     title: {
       fontSize: 24,
       fontWeight: "bold",
-      marginBottom: 20,
+      marginBottom: 18,
       color: theme === "light" ? "#000" : "#fff",
     },
     dateLabel: {
-      fontSize: 16,
-      marginVertical: 10,
+      fontSize: 17,
       color: theme === "light" ? "#000" : "#ddd",
     },
     noData: {

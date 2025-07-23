@@ -182,6 +182,7 @@ export default function ItemScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
+      paddingTop: 18,
       paddingHorizontal: 20,
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
@@ -195,11 +196,11 @@ const getStyles = (theme: "light" | "dark") =>
     input: {
       borderWidth: 1,
       borderColor: theme === "dark" ? "#555" : "#ccc",
-      padding: 10,
+      padding: 12,
+      borderRadius: 8,
       marginBottom: 10,
-      borderRadius: 6,
-      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
       color: theme === "dark" ? "#fff" : "#000",
+      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
     },
     buttonRow: {
       marginBottom: 20,
@@ -207,7 +208,6 @@ const getStyles = (theme: "light" | "dark") =>
 
     emptyText: {
       textAlign: "center",
-      marginTop: 20,
       color: theme === "dark" ? "#aaa" : "#888",
     },
 
