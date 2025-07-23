@@ -179,6 +179,7 @@ export default function HomeScreen() {
                     ? theme.background // contrast with white background
                     : theme.text,
                 fontWeight: "600",
+                fontSize: 14
               }}
             >
               {filter.label}
