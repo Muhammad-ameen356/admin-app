@@ -28,10 +28,20 @@ export default function UserCrudScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const styles = getStyles(colorScheme);
 
-  const [users, setUsers] = useState<User[]>([]);
   const [name, setName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  const [searchName, setSearchName] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+
+  const reset = () => {
+    setName("");
+    setEmployeeId("");
+    setSearchName("");
+    setEditingId(null);
+  };
 
   useEffect(() => {
     (async () => {
@@ -39,17 +49,25 @@ export default function UserCrudScreen() {
         useNewConnection: true,
       });
 
-      await loadUsers();
+      await loadUsersFromDB();
     })();
+    return () => {
+      reset();
+    };
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsersFromDB = async () => {
     try {
       const rows = await db.getAllAsync<User>(
         "SELECT * FROM users ORDER BY id DESC"
       );
-      setUsers(rows);
+
+      const sorted = [...rows].sort((a, b) => a.name.localeCompare(b.name));
+      setUsers(sorted);
+
+      setFilteredUsers(sorted);
     } catch (err) {
+      Alert.alert("Error", "Could not load users from database.");
       console.error("Load error:", err);
     }
   };
@@ -81,12 +99,9 @@ export default function UserCrudScreen() {
         Alert.alert("Updated", "User updated.");
       }
 
-      setName("");
-      setEmployeeId("");
-      setEditingId(null);
-      await loadUsers();
+      reset();
+      await loadUsersFromDB();
     } catch (error: any) {
-      setName("");
       setEmployeeId("");
       if (
         error.message.includes("UNIQUE constraint failed") &&
@@ -105,36 +120,49 @@ export default function UserCrudScreen() {
     setEditingId(user.id);
   };
 
-  const handleDelete = (id: number) => {
-    Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this user?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Yes",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await db.runAsync("DELETE FROM users WHERE id = ?", [id]);
-              Alert.alert("Deleted", "User removed.");
-              await loadUsers();
-            } catch (err) {
-              console.error("Delete error:", err);
-              Alert.alert("Error", "Could not delete user.");
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
+  // const handleDelete = (id: number) => {
+  //   Alert.alert(
+  //     "Confirm Delete",
+  //     "Are you sure you want to delete this user?",
+  //     [
+  //       { text: "Cancel", style: "cancel" },
+  //       {
+  //         text: "Yes",
+  //         style: "destructive",
+  //         onPress: async () => {
+  //           try {
+  //             await db.runAsync("DELETE FROM users WHERE id = ?", [id]);
+  //             Alert.alert("Deleted", "User removed.");
+  //             await loadUsersFromDB();
+  //           } catch (err) {
+  //             console.error("Delete error:", err);
+  //             Alert.alert("Error", "Could not delete user.");
+  //           }
+  //         },
+  //       },
+  //     ],
+  //     { cancelable: true }
+  //   );
+  // };
 
   const cancelEdit = () => {
-    setName("");
-    setEmployeeId("");
-    setEditingId(null);
+    reset();
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchName.trim()) {
+        const filtered = users.filter((item) =>
+          item.name.toLowerCase().includes(searchName.toLowerCase())
+        );
+        setFilteredUsers(filtered);
+      } else {
+        setFilteredUsers(users);
+      }
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchName, users]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -146,7 +174,10 @@ export default function UserCrudScreen() {
         placeholder="Enter Name"
         placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#999"}
         value={name}
-        onChangeText={setName}
+        onChangeText={(text) => {
+          setName(text);
+          setSearchName(text);
+        }}
         style={styles.input}
       />
 
@@ -165,7 +196,10 @@ export default function UserCrudScreen() {
 
       <ThemedView style={{ marginBottom: 20 }}>
         <ThemedView>
-          <Button title={editingId ? "Update" : "Add"} onPress={handleSave} />
+          <Button
+            title={editingId ? "Update User" : "Add User"}
+            onPress={handleSave}
+          />
         </ThemedView>
         <ThemedView>
           {editingId !== null && (
@@ -174,7 +208,7 @@ export default function UserCrudScreen() {
         </ThemedView>
       </ThemedView>
       <FlatList
-        data={users}
+        data={editingId ? users : filteredUsers}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={<Text style={styles.empty}>No users found.</Text>}
@@ -251,7 +285,8 @@ const getStyles = (theme: "light" | "dark") =>
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: theme === "dark" ? "#1f1f1f" : "#f9f9f9",
-      padding: 15,
+      paddingHorizontal: 15,
+      paddingVertical: 4,
       borderRadius: 10,
       marginBottom: 12,
       borderWidth: 1,
