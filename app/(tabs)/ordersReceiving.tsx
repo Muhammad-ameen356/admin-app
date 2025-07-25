@@ -10,10 +10,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Button,
+  Keyboard,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Vibration,
   View,
 } from "react-native";
@@ -70,6 +72,9 @@ export default function TakeOrderScreen() {
         await loadItems();
         await loadOrders();
       })();
+      return () => {
+        resetForm();
+      };
     }, [])
   );
 
@@ -258,196 +263,37 @@ export default function TakeOrderScreen() {
     setPaidAmount("");
     setTotalAmount(0);
     setEditingOrderId(null);
+    setSelectedUser(null);
   };
 
   return (
-    <KeyboardAwareScrollView enableOnAndroid>
-      <SafeAreaView style={styles.safeContainer}>
-        <Text style={styles.title}>
-          {editingOrderId ? "Update Order" : "Take Order"}
-        </Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        keyboardShouldPersistTaps="handled"
+      >
+        <SafeAreaView style={styles.safeContainer}>
+          <Text style={styles.title}>
+            {editingOrderId ? "Update Order" : "Take Order"}
+          </Text>
 
-        <Text style={styles.label}>Select User</Text>
-        <DropDownPicker
-          listMode="MODAL"
-          modalTitle="Select a User"
-          open={userDropdownOpen}
-          value={selectedUserId}
-          items={[
-            { label: "-- Select User --", value: undefined },
-            ...users.map((user) => ({
-              key: `userDropdown-${user.id}`,
-              label: `${user.name} - ${user.employeeId}`,
-              value: user.id,
-            })),
-          ]}
-          setOpen={setUserDropdownOpen}
-          setValue={setSelectedUserId}
-          placeholder="Select User"
-          searchable
-          style={[
-            styles.dropdown,
-            { backgroundColor: theme.card, borderColor: theme.border },
-          ]}
-          dropDownContainerStyle={{
-            backgroundColor: theme.card,
-            borderColor: theme.border,
-          }}
-          labelStyle={{ color: theme.text }}
-          textStyle={{ color: theme.text }}
-          placeholderStyle={{ color: theme.text }}
-          searchTextInputStyle={{ color: theme.text }}
-          modalContentContainerStyle={{
-            backgroundColor: theme.background,
-          }}
-        />
-
-        <Text style={styles.label}>Items</Text>
-        {orderItems.map((item, index) => (
-          <View key={index} style={styles.itemRow}>
-            {/* Item Dropdown */}
-            <View style={{ flex: 1 }}>
-              <DropDownPicker
-                listMode="MODAL"
-                modalTitle="Select an Item"
-                open={item.dropdownOpen || false}
-                value={item.itemId}
-                items={items.map((i) => ({
-                  key: `itemDropdown-${i.id}`,
-                  label: `${i.name} - Rs ${i.amount}`,
-                  value: i.id,
-                }))}
-                setOpen={(val: any) => {
-                  const updated = [...orderItems];
-                  updated[index].dropdownOpen =
-                    typeof val === "function"
-                      ? val(item.dropdownOpen || false)
-                      : val;
-                  setOrderItems(updated);
-                }}
-                setValue={(callback) => {
-                  const updated = [...orderItems];
-                  updated[index].itemId = callback(item.itemId);
-                  setOrderItems(updated);
-                }}
-                placeholder="Select Item"
-                searchable
-                style={[
-                  styles.dropdown,
-                  { backgroundColor: theme.card, borderColor: theme.border },
-                ]}
-                dropDownContainerStyle={{
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                }}
-                labelStyle={{ color: theme.text }}
-                textStyle={{ color: theme.text }}
-                placeholderStyle={{ color: theme.text }}
-                searchTextInputStyle={{ color: theme.text }}
-                modalContentContainerStyle={{
-                  backgroundColor: theme.background,
-                }}
-              />
-            </View>
-
-            {/* Quantity Controls */}
-            <View style={styles.quantityContainer}>
-              <TouchableOpacity
-                onPress={() =>
-                  handleItemChange(
-                    index,
-                    "quantity",
-                    item.quantity > 1 ? item.quantity - 1 : 1
-                  )
-                }
-                style={styles.qtyButton}
-              >
-                <Text style={styles.qtyButtonText}>−</Text>
-              </TouchableOpacity>
-
-              <TextInput
-                style={styles.qtyInput}
-                placeholder="Qty"
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-                value={item.quantity.toString()}
-                onChangeText={(val: any) =>
-                  handleItemChange(index, "quantity", val)
-                }
-              />
-
-              <TouchableOpacity
-                onPress={() =>
-                  handleItemChange(index, "quantity", item.quantity + 1)
-                }
-                style={styles.qtyButton}
-              >
-                <Text style={styles.qtyButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Remove Button */}
-            {orderItems.length > 1 && (
-              <TouchableOpacity
-                onPress={() => removeOrderItem(index)}
-                style={{ marginLeft: 8 }}
-              >
-                <Text style={styles.remove}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-
-        <TouchableOpacity onPress={addOrderItem} style={styles.addButton}>
-          <Text style={styles.addButtonText}>+ Add Item</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.total}>Total: Rs {totalAmount}</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Paid Amount"
-          placeholderTextColor="#888"
-          keyboardType="numeric"
-          value={paidAmount}
-          onChangeText={(text) => {
-            // Allow only digits (remove -, letters, etc.)
-            const digitsOnly = text.replace(/[^0-9]/g, "");
-            setPaidAmount(digitsOnly);
-          }}
-        />
-
-        <Button
-          color={editingOrderId ? "orange" : ""}
-          title={editingOrderId ? "Update Order" : "Save Order"}
-          onPress={handleSaveOrder}
-        />
-        {editingOrderId && (
-          <TouchableOpacity onPress={resetForm} style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>CANCEL UPDATE</Text>
-          </TouchableOpacity>
-        )}
-
-        <ThemedView style={{ marginTop: 20 }}>
-          <ThemedText>Filter Order By User</ThemedText>
-          {/* Filter Order */}
+          <Text style={styles.label}>Select User</Text>
           <DropDownPicker
             listMode="MODAL"
             modalTitle="Select a User"
-            open={open}
-            value={selectedUser}
+            open={userDropdownOpen}
+            value={selectedUserId}
             items={[
               { label: "-- Select User --", value: undefined },
-              ...dropdownItems.map((user) => ({
+              ...users.map((user) => ({
                 key: `userDropdown-${user.id}`,
                 label: `${user.name} - ${user.employeeId}`,
-                value: user.employeeId,
+                value: user.id,
               })),
             ]}
-            setOpen={setOpen}
-            setValue={setSelectedUser}
-            setItems={setDropdownItems}
-            placeholder="Filter by User"
+            setOpen={setUserDropdownOpen}
+            setValue={setSelectedUserId}
+            placeholder="Select User"
             searchable
             style={[
               styles.dropdown,
@@ -466,89 +312,254 @@ export default function TakeOrderScreen() {
             }}
           />
 
-          <TouchableOpacity
-            onPress={() => setSelectedUser(null)}
-            style={styles.resetButton}
-          >
-            <Text style={{ fontWeight: "bold" }}>🔄 Reset Filter</Text>
-          </TouchableOpacity>
-        </ThemedView>
-
-        {/* Display Orders */}
-        <Text style={[styles.label, { marginTop: 10 }]}>Today Orders</Text>
-        {orders.length === 0 ? (
-          <Text style={styles.text}>No orders yet.</Text>
-        ) : (
-          orders
-            .filter((order) =>
-              selectedUser ? order.employeeId === selectedUser : true
-            )
-            .map((order) => {
-              const diff = order.paid_amount - order.total_amount;
-              let statusText =
-                diff === 0
-                  ? "✅ Settled"
-                  : diff < 0
-                  ? `❌ Pending: Rs ${Math.abs(diff)}`
-                  : `💰 Extra Paid: Rs ${diff}`;
-
-              let statusColor =
-                diff === 0 ? "green" : diff < 0 ? "red" : "orange";
-
-              return (
-                <TouchableOpacity
-                  key={order.id}
-                  onPress={() =>
-                    Alert.alert("Hold to edit or delete this order")
-                  }
-                  onLongPress={() => {
-                    Vibration.vibrate(100);
-                    Alert.alert(
-                      "Edit or Delete Order",
-                      "آرڈر میں ترمیم کریں یا حذف کریں۔",
-                      [
-                        {
-                          text: "Cancel",
-                          style: "cancel",
-                        },
-                        {
-                          text: "Delete",
-                          onPress: () => handleDeleteOrder(order.id),
-                          style: "destructive",
-                        },
-                        {
-                          text: "Edit",
-                          onPress: () => handleEditOrder(order.id),
-                        },
-                      ],
-                      { cancelable: true }
-                    );
+          <Text style={styles.label}>Items</Text>
+          {orderItems.map((item, index) => (
+            <View key={index} style={styles.itemRow}>
+              {/* Item Dropdown */}
+              <View style={{ flex: 1 }}>
+                <DropDownPicker
+                  listMode="MODAL"
+                  modalTitle="Select an Item"
+                  open={item.dropdownOpen || false}
+                  value={item.itemId}
+                  items={items.map((i) => ({
+                    key: `itemDropdown-${i.id}`,
+                    label: `${i.name} - Rs ${i.amount}`,
+                    value: i.id,
+                  }))}
+                  setOpen={(val: any) => {
+                    const updated = [...orderItems];
+                    updated[index].dropdownOpen =
+                      typeof val === "function"
+                        ? val(item.dropdownOpen || false)
+                        : val;
+                    setOrderItems(updated);
                   }}
-                  style={styles.orderItem}
+                  setValue={(callback) => {
+                    const updated = [...orderItems];
+                    updated[index].itemId = callback(item.itemId);
+                    setOrderItems(updated);
+                  }}
+                  placeholder="Select Item"
+                  searchable
+                  style={[
+                    styles.dropdown,
+                    { backgroundColor: theme.card, borderColor: theme.border },
+                  ]}
+                  dropDownContainerStyle={{
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                  }}
+                  labelStyle={{ color: theme.text }}
+                  textStyle={{ color: theme.text }}
+                  placeholderStyle={{ color: theme.text }}
+                  searchTextInputStyle={{ color: theme.text }}
+                  modalContentContainerStyle={{
+                    backgroundColor: theme.background,
+                  }}
+                />
+              </View>
+
+              {/* Quantity Controls */}
+              <View style={styles.quantityContainer}>
+                <TouchableOpacity
+                  onPress={() =>
+                    handleItemChange(
+                      index,
+                      "quantity",
+                      item.quantity > 1 ? item.quantity - 1 : 1
+                    )
+                  }
+                  style={styles.qtyButton}
                 >
-                  <Text style={[styles.text, { fontWeight: "bold" }]}>
-                    👤 {order.userName} - {order.employeeId}
-                  </Text>
-                  <Text style={[styles.text, { fontWeight: "bold" }]}>
-                    💸 Rs {order.total_amount} (Paid: Rs
-                    {order.paid_amount})
-                  </Text>
-                  <Text style={[styles.text, { fontSize: 15 }]}>
-                    ⏰
-                    {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
-                  </Text>
-                  <Text style={[styles.text, { fontSize: 15 }]}>
-                    📅 {order.order_date}
-                  </Text>
-                  <Text style={{ color: statusColor, fontWeight: "bold" }}>
-                    {statusText}
-                  </Text>
+                  <Text style={styles.qtyButtonText}>−</Text>
                 </TouchableOpacity>
-              );
-            })
-        )}
-      </SafeAreaView>
-    </KeyboardAwareScrollView>
+
+                <TextInput
+                  style={styles.qtyInput}
+                  placeholder="Qty"
+                  placeholderTextColor="#888"
+                  keyboardType="numeric"
+                  value={item.quantity.toString()}
+                  onChangeText={(val: any) =>
+                    handleItemChange(index, "quantity", val)
+                  }
+                />
+
+                <TouchableOpacity
+                  onPress={() =>
+                    handleItemChange(index, "quantity", item.quantity + 1)
+                  }
+                  style={styles.qtyButton}
+                >
+                  <Text style={styles.qtyButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Remove Button */}
+              {orderItems.length > 1 && (
+                <TouchableOpacity
+                  onPress={() => removeOrderItem(index)}
+                  style={{ marginLeft: 8 }}
+                >
+                  <Text style={styles.remove}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+
+          <TouchableOpacity onPress={addOrderItem} style={styles.addButton}>
+            <Text style={styles.addButtonText}>+ Add Item</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.total}>Total: Rs {totalAmount}</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Paid Amount"
+            placeholderTextColor="#888"
+            keyboardType="numeric"
+            value={paidAmount}
+            onChangeText={(text) => {
+              // Allow only digits (remove -, letters, etc.)
+              const digitsOnly = text.replace(/[^0-9]/g, "");
+              setPaidAmount(digitsOnly);
+            }}
+          />
+
+          <Button
+            color={editingOrderId ? "orange" : ""}
+            title={editingOrderId ? "Update Order" : "Save Order"}
+            onPress={handleSaveOrder}
+          />
+          {editingOrderId && (
+            <TouchableOpacity onPress={resetForm} style={styles.cancelButton}>
+              <Text style={styles.cancelButtonText}>CANCEL UPDATE</Text>
+            </TouchableOpacity>
+          )}
+
+          <ThemedView style={{ marginTop: 20 }}>
+            <ThemedText>Filter Order By User</ThemedText>
+            {/* Filter Order */}
+            <DropDownPicker
+              listMode="MODAL"
+              modalTitle="Select a User"
+              open={open}
+              value={selectedUser}
+              items={[
+                { label: "-- Select User --", value: undefined },
+                ...dropdownItems.map((user) => ({
+                  key: `userDropdown-${user.id}`,
+                  label: `${user.name} - ${user.employeeId}`,
+                  value: user.employeeId,
+                })),
+              ]}
+              setOpen={setOpen}
+              setValue={setSelectedUser}
+              setItems={setDropdownItems}
+              placeholder="Filter by User"
+              searchable
+              style={[
+                styles.dropdown,
+                { backgroundColor: theme.card, borderColor: theme.border },
+              ]}
+              dropDownContainerStyle={{
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+              }}
+              labelStyle={{ color: theme.text }}
+              textStyle={{ color: theme.text }}
+              placeholderStyle={{ color: theme.text }}
+              searchTextInputStyle={{ color: theme.text }}
+              modalContentContainerStyle={{
+                backgroundColor: theme.background,
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={() => setSelectedUser(null)}
+              style={styles.resetButton}
+            >
+              <Text style={{ fontWeight: "bold" }}>🔄 Reset Filter</Text>
+            </TouchableOpacity>
+          </ThemedView>
+
+          {/* Display Orders */}
+          <Text style={[styles.label, { marginTop: 10 }]}>Today Orders</Text>
+          {orders.length === 0 ? (
+            <Text style={styles.text}>No orders yet.</Text>
+          ) : (
+            orders
+              .filter((order) =>
+                selectedUser ? order.employeeId === selectedUser : true
+              )
+              .map((order) => {
+                const diff = order.paid_amount - order.total_amount;
+                let statusText =
+                  diff === 0
+                    ? "✅ Settled"
+                    : diff < 0
+                    ? `❌ Pending: Rs ${Math.abs(diff)}`
+                    : `💰 Extra Paid: Rs ${diff}`;
+
+                let statusColor =
+                  diff === 0 ? "green" : diff < 0 ? "red" : "orange";
+
+                return (
+                  <TouchableOpacity
+                    key={order.id}
+                    onPress={() =>
+                      Alert.alert("Hold to edit or delete this order")
+                    }
+                    onLongPress={() => {
+                      Vibration.vibrate(100);
+                      Alert.alert(
+                        "Edit or Delete Order",
+                        "آرڈر میں ترمیم کریں یا حذف کریں۔",
+                        [
+                          {
+                            text: "Cancel",
+                            style: "cancel",
+                          },
+                          {
+                            text: "Delete",
+                            onPress: () => handleDeleteOrder(order.id),
+                            style: "destructive",
+                          },
+                          {
+                            text: "Edit",
+                            onPress: () => handleEditOrder(order.id),
+                          },
+                        ],
+                        { cancelable: true }
+                      );
+                    }}
+                    style={styles.orderItem}
+                  >
+                    <Text style={[styles.text, { fontWeight: "bold" }]}>
+                      👤 {order.userName} - {order.employeeId}
+                    </Text>
+                    <Text style={[styles.text, { fontWeight: "bold" }]}>
+                      💸 Rs {order.total_amount} (Paid: Rs
+                      {order.paid_amount})
+                    </Text>
+                    <Text style={[styles.text, { fontSize: 15 }]}>
+                      ⏰
+                      {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
+                    </Text>
+                    <Text style={[styles.text, { fontSize: 15 }]}>
+                      📅 {order.order_date}
+                    </Text>
+                    <Text style={{ color: statusColor, fontWeight: "bold" }}>
+                      {statusText}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })
+          )}
+        </SafeAreaView>
+      </KeyboardAwareScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -557,7 +568,7 @@ const themedStyles = (theme: "light" | "dark") =>
     safeContainer: {
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
-      padding: 20,
+      padding: 18,
     },
     title: {
       fontSize: 24,
