@@ -1,5 +1,4 @@
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
 import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -8,7 +7,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
-import { Button, FlatList, Platform, StyleSheet, View } from "react-native";
+import {
+  FlatList,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 let db: SQLiteDatabase;
@@ -59,26 +64,22 @@ export default function OrderSummaryScreen() {
   };
 
   const SummaryItem = ({ item }: { item: any }) => (
-    <ThemedView style={styles.card}>
-      <ThemedView style={styles.cardContent}>
-        <ThemedText style={styles.itemName}>🍽 {item.name}</ThemedText>
-        <View style={styles.totalBadge}>
-          <ThemedText style={styles.totalBadgeText}>{item.total}</ThemedText>
-        </View>
-      </ThemedView>
-    </ThemedView>
+    <View style={styles.row}>
+      <ThemedText style={styles.itemText}>🍽 {item.name}</ThemedText>
+      <View style={styles.badge}>
+        <ThemedText style={styles.badgeText}>{item.total}</ThemedText>
+      </View>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ThemedText style={styles.title}>Order Summary</ThemedText>
-
-      <ThemedText style={styles.dateLabel}>
-        📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
-      </ThemedText>
-      <View style={{ marginBottom: 10 }}>
-        <Button title="Select Date" onPress={() => setShowPicker(true)} />
-      </View>
+      <TouchableOpacity onPress={() => setShowPicker(true)}>
+        <ThemedText style={styles.dateLabel}>
+          📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
+        </ThemedText>
+      </TouchableOpacity>
 
       {showPicker && (
         <DateTimePicker
@@ -89,17 +90,25 @@ export default function OrderSummaryScreen() {
         />
       )}
 
-      {summary.length === 0 ? (
-        <ThemedText style={styles.noData}>No orders found.</ThemedText>
-      ) : (
-        <FlatList
-          data={summary}
-          keyExtractor={(item, index) => index.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          renderItem={({ item }) => <SummaryItem item={item} />}
-        />
-      )}
+      <FlatList
+        data={summary}
+        ListEmptyComponent={
+          <ThemedText style={styles.noData}>No Item Found.</ThemedText>
+        }
+        showsVerticalScrollIndicator={true}
+        ItemSeparatorComponent={() => (
+          <View
+            style={{
+              height: 1,
+              backgroundColor: colorScheme === "dark" ? "#333" : "#ccc",
+              marginVertical: 4,
+            }}
+          />
+        )}
+        keyExtractor={(item, index) => index.toString()}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        renderItem={({ item }) => <SummaryItem item={item} />}
+      />
     </SafeAreaView>
   );
 }
@@ -107,6 +116,7 @@ export default function OrderSummaryScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
+      paddingTop: 18,
       flex: 1,
       paddingHorizontal: 20,
       backgroundColor: theme === "light" ? "#fff" : "#121212",
@@ -114,60 +124,56 @@ const getStyles = (theme: "light" | "dark") =>
     title: {
       fontSize: 24,
       fontWeight: "bold",
-      marginBottom: 20,
+      marginBottom: 18,
       color: theme === "light" ? "#000" : "#fff",
     },
     dateLabel: {
-      fontSize: 16,
-      marginVertical: 10,
+      fontSize: 17,
       color: theme === "light" ? "#000" : "#ddd",
+      marginBottom: 10,
+      fontWeight: "800",
     },
     noData: {
       marginTop: 20,
       fontSize: 16,
       color: theme === "light" ? "#333" : "#bbb",
     },
-    card: {
-      backgroundColor: theme === "light" ? "#fff" : "#000",
-      borderColor: theme === "light" ? "#ddd" : "#444",
-      borderWidth: 1,
-      padding: 12,
-      marginBottom: 10,
-      borderRadius: 8,
-    },
 
-    cardText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: theme === "light" ? "#000" : "#fff",
-    },
-
-    cardContent: {
+    row: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-    },
-
-    itemName: {
-      fontSize: 16,
-      fontWeight: "600",
-      flex: 1,
-      color: theme === "light" ? "#000" : "#fff",
-    },
-
-    totalBadge: {
-      backgroundColor: theme === "light" ? "#007bff" : "#3b82f6",
-      paddingHorizontal: 12,
       paddingVertical: 6,
+      paddingHorizontal: 4,
+    },
+
+    itemText: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: theme === "dark" ? "#fff" : "#000",
+      flex: 1,
+    },
+
+    quantityText: {
+      fontSize: 15,
+      fontWeight: "bold",
+      color: theme === "dark" ? "#fff" : "#000",
+      marginLeft: 10,
+    },
+
+    badge: {
+      backgroundColor: theme === "dark" ? "#3b82f6" : "#007bff", // blue
+      paddingHorizontal: 10,
+      paddingVertical: 2,
       borderRadius: 50,
-      minWidth: 40,
+      minWidth: 28,
       alignItems: "center",
       justifyContent: "center",
     },
 
-    totalBadgeText: {
+    badgeText: {
       color: "#fff",
       fontWeight: "bold",
-      fontSize: 16,
+      fontSize: 14,
     },
   });

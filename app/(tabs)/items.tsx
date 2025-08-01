@@ -29,21 +29,40 @@ export default function ItemScreen() {
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [items, setItems] = useState<Item[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [searchName, setSearchName] = useState("");
+  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
+
+  const reset = () => {
+    setName("");
+    setAmount("");
+    setSearchName("");
+    setEditingId(null);
+  };
 
   useEffect(() => {
     (async () => {
       db = await openDatabaseAsync(dbName, {
         useNewConnection: true,
       });
-      await loadItems();
+      await loadItemsFromDB();
     })();
+    return () => {
+      reset();
+    };
   }, []);
 
-  const loadItems = async () => {
-    const rows = await db.getAllAsync<Item>("SELECT * FROM items");
-    setItems(rows);
+  const loadItemsFromDB = async () => {
+    try {
+      const rows = await db.getAllAsync<Item>("SELECT * FROM items");
+      const sorted = [...rows].sort((a, b) => a.name.localeCompare(b.name));
+      setItems(sorted);
+      setFilteredItems(sorted);
+    } catch (err) {
+      Alert.alert("Error", "Could not load items from database.");
+      console.error("Load error:", err);
+    }
   };
 
   const handleSave = async () => {
@@ -70,10 +89,8 @@ export default function ItemScreen() {
         Alert.alert("Item added");
       }
 
-      setName("");
-      setAmount("");
-      setEditingId(null);
-      await loadItems();
+      await loadItemsFromDB();
+      reset();
     } catch (err) {
       console.error("Save Error:", err);
       Alert.alert("Invalid amount");
@@ -95,10 +112,12 @@ export default function ItemScreen() {
         onPress: async () => {
           try {
             await db.runAsync("DELETE FROM items WHERE id = ?", [id]);
-            await loadItems();
+            await loadItemsFromDB();
+            reset();
           } catch (err) {
             console.error("Delete Error:", err);
             Alert.alert("Failed to delete");
+            reset();
           }
         },
       },
@@ -106,10 +125,23 @@ export default function ItemScreen() {
   };
 
   const cancelEdit = () => {
-    setName("");
-    setAmount("");
-    setEditingId(null);
+    reset();
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchName.trim()) {
+        const filtered = items.filter((item) =>
+          item.name.toLowerCase().includes(searchName.toLowerCase())
+        );
+        setFilteredItems(filtered);
+      } else {
+        setFilteredItems(items);
+      }
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchName, items]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -120,8 +152,12 @@ export default function ItemScreen() {
         placeholder="Item Name"
         placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
         value={name}
-        onChangeText={setName}
+        onChangeText={(text) => {
+          setName(text);
+          setSearchName(text);
+        }}
       />
+
       <TextInput
         style={styles.input}
         placeholder="Amount"
@@ -146,7 +182,7 @@ export default function ItemScreen() {
       </ThemedView>
 
       <FlatList
-        data={items}
+        data={editingId ? items : filteredItems}
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -182,6 +218,7 @@ export default function ItemScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
+      paddingTop: 18,
       paddingHorizontal: 20,
       flex: 1,
       backgroundColor: theme === "dark" ? "#121212" : "#fff",
@@ -195,11 +232,11 @@ const getStyles = (theme: "light" | "dark") =>
     input: {
       borderWidth: 1,
       borderColor: theme === "dark" ? "#555" : "#ccc",
-      padding: 10,
+      padding: 12,
+      borderRadius: 8,
       marginBottom: 10,
-      borderRadius: 6,
-      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
       color: theme === "dark" ? "#fff" : "#000",
+      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
     },
     buttonRow: {
       marginBottom: 20,
@@ -207,7 +244,6 @@ const getStyles = (theme: "light" | "dark") =>
 
     emptyText: {
       textAlign: "center",
-      marginTop: 20,
       color: theme === "dark" ? "#aaa" : "#888",
     },
 
@@ -215,7 +251,8 @@ const getStyles = (theme: "light" | "dark") =>
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: theme === "dark" ? "#1f1f1f" : "#fafafa",
-      padding: 15,
+      paddingHorizontal: 15,
+      paddingVertical: 4,
       borderRadius: 10,
       marginBottom: 12,
       borderWidth: 1,
