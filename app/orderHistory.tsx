@@ -6,9 +6,11 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
+import * as Clipboard from "expo-clipboard";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
+  Alert,
   FlatList,
   Platform,
   StyleSheet,
@@ -41,7 +43,6 @@ export default function OrderHistoryScreen() {
         fetchOrders(startDate, endDate);
       })();
       return () => {
-        // cleanup on blur
         setSearchQuery("");
         setStartDate(initialStartDate);
         setEndDate(initialEndDate);
@@ -90,8 +91,8 @@ export default function OrderHistoryScreen() {
       }
 
       const user = grouped[row.userId];
-
       let order = user.orders.find((o: any) => o.orderId === row.orderId);
+
       if (!order) {
         order = {
           orderId: row.orderId,
@@ -102,7 +103,6 @@ export default function OrderHistoryScreen() {
           items: [],
         };
         user.orders.push(order);
-
         user.totalAmount += row.total_amount;
         user.totalPaid += row.paid_amount;
       }
@@ -133,11 +133,24 @@ export default function OrderHistoryScreen() {
     }
   };
 
+  const copyUserOrders = (user: any) => {
+    let text = `👤 ${user.userName} (${user.employeeId})\nTotal: Rs ${user.totalAmount}, Paid: Rs ${user.totalPaid}\n\n`;
+    user.orders.forEach((order: any) => {
+      text += `🧾 Order #${order.orderId} - ${order.order_date} ${order.order_time}\n`;
+      text += `Total: Rs ${order.total_amount}, Paid: Rs ${order.paid_amount}\n`;
+      order.items.forEach((item: any) => {
+        text += `• ${item.name} x ${item.quantity} (Rs ${item.amount})\n`;
+      });
+      text += "\n";
+    });
+    Clipboard.setStringAsync(text);
+    Alert.alert("Copied!", "User's orders have been copied to clipboard.");
+  };
+
   const renderOrder = (order: any) => {
     const diff = order.paid_amount - order.total_amount;
     let statusText = "Paid in full";
     let statusColor = "green";
-
     if (diff < 0) {
       statusText = `Remaining: Rs ${Math.abs(diff)}`;
       statusColor = "red";
@@ -154,8 +167,8 @@ export default function OrderHistoryScreen() {
         <Text>Total: Rs {order.total_amount}</Text>
         <Text>Paid: Rs {order.paid_amount}</Text>
         <Text>Items:</Text>
-        {order.items.map((item: any, index: number) => (
-          <Text key={index}>
+        {order.items.map((item: any, idx: number) => (
+          <Text key={idx}>
             • {item.name} x {item.quantity} (Rs {item.amount})
           </Text>
         ))}
@@ -171,19 +184,9 @@ export default function OrderHistoryScreen() {
   );
 
   const renderUser = ({ item }: { item: any }) => {
-    const totalAmount = item.orders.reduce(
-      (sum: number, order: any) => sum + order.total_amount,
-      0
-    );
-    const totalPaid = item.orders.reduce(
-      (sum: number, order: any) => sum + order.paid_amount,
-      0
-    );
-
-    const diff = totalPaid - totalAmount;
+    const diff = item.totalPaid - item.totalAmount;
     let overallStatus = "Paid in full";
     let statusColor = "green";
-
     if (diff < 0) {
       overallStatus = `Remaining: Rs ${Math.abs(diff)}`;
       statusColor = "red";
@@ -193,18 +196,33 @@ export default function OrderHistoryScreen() {
     }
 
     return (
-      <View style={styles.userBox}>
+      <TouchableOpacity
+        style={styles.userBox}
+        onLongPress={() => copyUserOrders(item)}
+        activeOpacity={0.8}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: statusColor, fontWeight: "bold" }}>
+            👤 {item.userName} ({item.employeeId})
+          </Text>
+          <TouchableOpacity onPress={() => copyUserOrders(item)}>
+            <Text style={{ fontSize: 18 }}>📋</Text>
+          </TouchableOpacity>
+        </View>
+
         <Collapsible
-          title={
-            `👤 ${item.userName} (${item.employeeId})\n` +
-            `\u2022 Total: Rs ${totalAmount}\n` +
-            `\u2022 ${overallStatus}`
-          }
+          title={`Total: Rs ${item.totalAmount}\n${overallStatus}`}
           titleStyle={{ color: statusColor, lineHeight: 22 }}
         >
           {item.orders.map(renderOrder)}
         </Collapsible>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -226,20 +244,16 @@ export default function OrderHistoryScreen() {
       />
 
       <View style={styles.dateRow}>
-        <View>
-          <TouchableOpacity onPress={() => setShowStartPicker(true)}>
-            <ThemedText style={styles.label}>
-              📅 Start: {dayjs(startDate).format(DATE_FORMAT_FOR_SHOW)}
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
-        <View>
-          <TouchableOpacity onPress={() => setShowEndPicker(true)}>
-            <ThemedText style={styles.label}>
-              📅 End: {dayjs(endDate).format(DATE_FORMAT_FOR_SHOW)}
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => setShowStartPicker(true)}>
+          <ThemedText style={styles.label}>
+            📅 Start: {dayjs(startDate).format(DATE_FORMAT_FOR_SHOW)}
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowEndPicker(true)}>
+          <ThemedText style={styles.label}>
+            📅 End: {dayjs(endDate).format(DATE_FORMAT_FOR_SHOW)}
+          </ThemedText>
+        </TouchableOpacity>
       </View>
 
       {showStartPicker && (
@@ -281,18 +295,6 @@ const getStyles = (theme: "light" | "dark") =>
       paddingHorizontal: 20,
       backgroundColor: theme === "light" ? "#fff" : "#121212",
     },
-    title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 20,
-      color: theme === "light" ? "#000" : "#fff",
-    },
-    dateRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginVertical: 10,
-    },
     label: { fontSize: 16, color: theme === "light" ? "#000" : "#ddd" },
     noOrders: { marginTop: 20, fontSize: 16, color: "gray" },
     userBox: {
@@ -315,5 +317,11 @@ const getStyles = (theme: "light" | "dark") =>
       fontWeight: "600",
       marginBottom: 5,
       color: theme === "light" ? "#000" : "#fff",
+    },
+    dateRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginVertical: 10,
     },
   });
