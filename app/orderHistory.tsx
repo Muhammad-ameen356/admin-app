@@ -193,7 +193,7 @@ export default function OrderHistoryScreen() {
       0
     );
 
-    const diff = item.totalPaid - item.totalAmount;
+    const diff = totalPaid - totalAmount;
     let overallStatus = "Paid in full";
     let statusColor = "green";
     if (diff < 0) {
