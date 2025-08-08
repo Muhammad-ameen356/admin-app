@@ -206,38 +206,34 @@ export default function OrderHistoryScreen() {
 
     return (
       <View style={styles.userBox}>
-        <TouchableOpacity
-          style={styles.userBox}
-          onLongPress={() => copyUserOrders(item)}
-          activeOpacity={0.8}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            onLongPress={() => copyUserOrders(item)}
+            activeOpacity={0.8}
           >
-            <Text style={{ color: statusColor, fontWeight: "bold" }}>
-              👤 {item.userName} ({item.employeeId})
-            </Text>
-            <TouchableOpacity onPress={() => copyUserOrders(item)}>
-              <Text style={{ fontSize: 18 }}>📋</Text>
-            </TouchableOpacity>
-          </View>
+            <Collapsible
+              title={
+                `👤 ${item.userName} (${item.employeeId})\n` +
+                `\u2022 Total: Rs ${totalAmount}\n` +
+                `\u2022 ${overallStatus}`
+              }
+              titleStyle={{ color: statusColor, lineHeight: 22 }}
+            >
+              {item.orders.map(renderOrder)}
+            </Collapsible>
+          </TouchableOpacity>
 
-          <Collapsible
-            // title={
-            //   `👤 ${item.userName} (${item.employeeId})\n` +
-            //   `\u2022 Total: Rs ${totalAmount}\n` +
-            //   `\u2022 ${overallStatus}`
-            // }
-            title={`Total: Rs ${item.totalAmount}\n${overallStatus}`}
-            titleStyle={{ color: statusColor, lineHeight: 22 }}
-          >
-            {item.orders.map(renderOrder)}
-          </Collapsible>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => copyUserOrders(item)}>
+            <Text style={{ fontSize: 18 }}>📋</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
