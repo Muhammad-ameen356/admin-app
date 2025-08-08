@@ -274,16 +274,6 @@ export default function OrderHistoryScreen() {
             </ThemedText>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => setShowStartPicker(true)}>
-          <ThemedText style={styles.label}>
-            📅 Start: {dayjs(startDate).format(DATE_FORMAT_FOR_SHOW)}
-          </ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowEndPicker(true)}>
-          <ThemedText style={styles.label}>
-            📅 End: {dayjs(endDate).format(DATE_FORMAT_FOR_SHOW)}
-          </ThemedText>
-        </TouchableOpacity>
       </View>
 
       {showStartPicker && (
