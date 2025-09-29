@@ -6,14 +6,17 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
+import * as Clipboard from "expo-clipboard";
 import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
-  Button,
+  Alert,
   FlatList,
   Platform,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,26 +24,35 @@ import { SafeAreaView } from "react-native-safe-area-context";
 let db: SQLiteDatabase;
 
 export default function OrderHistoryScreen() {
+  const initialStartDate = dayjs().startOf("month").toDate();
+  const initialEndDate = dayjs().toDate();
+
   const [orders, setOrders] = useState<any[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const colorScheme = useColorScheme() ?? "light";
   const styles = getStyles(colorScheme);
-
-  const todayDate = dayjs().toDate();
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        setSelectedDate(todayDate);
         db = await openDatabaseAsync(dbName, { useNewConnection: true });
-        fetchOrders(todayDate);
+        fetchOrders(startDate, endDate);
       })();
+      return () => {
+        setSearchQuery("");
+        setStartDate(initialStartDate);
+        setEndDate(initialEndDate);
+      };
     }, [])
   );
 
-  const fetchOrders = async (date: Date) => {
-    const dateStr = dayjs(date).format(DATE_FORMAT_FOR_DB);
+  const fetchOrders = async (start: Date, end: Date) => {
+    const startDateStr = dayjs(start).format(DATE_FORMAT_FOR_DB);
+    const endDateStr = dayjs(end).format(DATE_FORMAT_FOR_DB);
 
     const rawOrders = await db.getAllAsync<any>(
       `SELECT 
@@ -59,9 +71,9 @@ export default function OrderHistoryScreen() {
       JOIN users u ON u.id = o.user_id
       JOIN order_items oi ON oi.order_id = o.id
       JOIN items i ON i.id = oi.item_id
-      WHERE o.order_date = ?
+      WHERE o.order_date BETWEEN ? AND ?
       ORDER BY u.id, o.id`,
-      [dateStr]
+      [startDateStr, endDateStr]
     );
 
     const grouped: any = {};
@@ -79,8 +91,8 @@ export default function OrderHistoryScreen() {
       }
 
       const user = grouped[row.userId];
-
       let order = user.orders.find((o: any) => o.orderId === row.orderId);
+
       if (!order) {
         order = {
           orderId: row.orderId,
@@ -91,7 +103,6 @@ export default function OrderHistoryScreen() {
           items: [],
         };
         user.orders.push(order);
-
         user.totalAmount += row.total_amount;
         user.totalPaid += row.paid_amount;
       }
@@ -106,19 +117,40 @@ export default function OrderHistoryScreen() {
     setOrders(Object.values(grouped));
   };
 
-  const onDateChange = (event: any, selected?: Date) => {
-    setShowDatePicker(Platform.OS === "ios");
+  const onStartDateChange = (event: any, selected?: Date) => {
+    setShowStartPicker(Platform.OS === "ios");
     if (selected) {
-      setSelectedDate(selected);
-      fetchOrders(selected);
+      setStartDate(selected);
+      fetchOrders(selected, endDate);
     }
+  };
+
+  const onEndDateChange = (event: any, selected?: Date) => {
+    setShowEndPicker(Platform.OS === "ios");
+    if (selected) {
+      setEndDate(selected);
+      fetchOrders(startDate, selected);
+    }
+  };
+
+  const copyUserOrders = (user: any) => {
+    let text = `👤 ${user.userName} (${user.employeeId})\nTotal: Rs ${user.totalAmount}, Paid: Rs ${user.totalPaid}\n\n`;
+    user.orders.forEach((order: any) => {
+      text += `🧾 Order #${order.orderId} - ${order.order_date} ${order.order_time}\n`;
+      text += `Total: Rs ${order.total_amount}, Paid: Rs ${order.paid_amount}\n`;
+      order.items.forEach((item: any) => {
+        text += `• ${item.name} x ${item.quantity} (Rs ${item.amount})\n`;
+      });
+      text += "\n";
+    });
+    Clipboard.setStringAsync(text);
+    Alert.alert("Copied!", "User's orders have been copied to clipboard.");
   };
 
   const renderOrder = (order: any) => {
     const diff = order.paid_amount - order.total_amount;
     let statusText = "Paid in full";
     let statusColor = "green";
-
     if (diff < 0) {
       statusText = `Remaining: Rs ${Math.abs(diff)}`;
       statusColor = "red";
@@ -135,8 +167,8 @@ export default function OrderHistoryScreen() {
         <Text>Total: Rs {order.total_amount}</Text>
         <Text>Paid: Rs {order.paid_amount}</Text>
         <Text>Items:</Text>
-        {order.items.map((item: any, index: number) => (
-          <Text key={index}>
+        {order.items.map((item: any, idx: number) => (
+          <Text key={idx}>
             • {item.name} x {item.quantity} (Rs {item.amount})
           </Text>
         ))}
@@ -146,6 +178,10 @@ export default function OrderHistoryScreen() {
       </View>
     );
   };
+
+  const filteredOrders = orders.filter((user: any) =>
+    user.userName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderUser = ({ item }: { item: any }) => {
     const totalAmount = item.orders.reduce(
@@ -160,7 +196,6 @@ export default function OrderHistoryScreen() {
     const diff = totalPaid - totalAmount;
     let overallStatus = "Paid in full";
     let statusColor = "green";
-
     if (diff < 0) {
       overallStatus = `Remaining: Rs ${Math.abs(diff)}`;
       statusColor = "red";
@@ -171,45 +206,95 @@ export default function OrderHistoryScreen() {
 
     return (
       <View style={styles.userBox}>
-        <Collapsible
-          title={
-            `👤 ${item.userName} (${item.employeeId})\n` +
-            `\u2022 Total: Rs ${totalAmount}\n` +
-            `\u2022 ${overallStatus}`
-          }
-          titleStyle={{ color: statusColor, lineHeight: 22 }}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
         >
-          {item.orders.map(renderOrder)}
-        </Collapsible>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            onLongPress={() => copyUserOrders(item)}
+            activeOpacity={0.8}
+          >
+            <Collapsible
+              title={
+                `👤 ${item.userName} (${item.employeeId})\n` +
+                `\u2022 Total: Rs ${totalAmount}\n` +
+                `\u2022 ${overallStatus}`
+              }
+              titleStyle={{ color: statusColor, lineHeight: 22 }}
+            >
+              {item.orders.map(renderOrder)}
+            </Collapsible>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => copyUserOrders(item)}>
+            <Text style={{ fontSize: 18 }}>📋</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedText style={styles.title}>Order History</ThemedText>
+      <TextInput
+        placeholder="Search By Name"
+        placeholderTextColor="gray"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        style={{
+          borderColor: "gray",
+          borderWidth: 1,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 12,
+          color: colorScheme === "light" ? "black" : "white",
+        }}
+      />
 
       <View style={styles.dateRow}>
-        <ThemedText style={styles.label}>
-          📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
-        </ThemedText>
-        <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
+        <View>
+          <TouchableOpacity onPress={() => setShowStartPicker(true)}>
+            <ThemedText style={styles.label}>
+              📅 Start: {dayjs(startDate).format(DATE_FORMAT_FOR_SHOW)}
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+        <View>
+          <TouchableOpacity onPress={() => setShowEndPicker(true)}>
+            <ThemedText style={styles.label}>
+              📅 End: {dayjs(endDate).format(DATE_FORMAT_FOR_SHOW)}
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {showDatePicker && (
+      {showStartPicker && (
         <DateTimePicker
-          value={selectedDate}
+          value={startDate}
           mode="date"
           display="default"
-          onChange={onDateChange}
+          onChange={onStartDateChange}
         />
       )}
 
-      {orders.length === 0 ? (
-        <Text style={styles.noOrders}>No orders found for this date.</Text>
+      {showEndPicker && (
+        <DateTimePicker
+          value={endDate}
+          mode="date"
+          display="default"
+          onChange={onEndDateChange}
+        />
+      )}
+
+      {filteredOrders.length === 0 ? (
+        <Text style={styles.noOrders}>No orders found for this range.</Text>
       ) : (
         <FlatList
-          data={orders}
+          data={filteredOrders}
           keyExtractor={(item) => item.userId.toString()}
           renderItem={renderUser}
           contentContainerStyle={{ paddingBottom: 20 }}
@@ -236,7 +321,7 @@ const getStyles = (theme: "light" | "dark") =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 10,
+      marginVertical: 10,
     },
     label: { fontSize: 16, color: theme === "light" ? "#000" : "#ddd" },
     noOrders: { marginTop: 20, fontSize: 16, color: "gray" },
