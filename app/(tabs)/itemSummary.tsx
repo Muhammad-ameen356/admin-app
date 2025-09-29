@@ -12,6 +12,7 @@ import {
   Platform,
   StyleSheet,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -43,16 +44,35 @@ export default function OrderSummaryScreen() {
     const dateStr = dayjs(date).format(DATE_FORMAT_FOR_DB);
 
     const result = await db.getAllAsync<any>(
-      `SELECT items.name, SUM(order_items.quantity) as total
-       FROM order_items
-       JOIN orders ON order_items.order_id = orders.id
-       JOIN items ON order_items.item_id = items.id
-       WHERE orders.order_date = ?
-       GROUP BY items.name`,
-      [dateStr]
+      `SELECT items.id, items.name, 
+            SUM(order_items.quantity) as total,
+            CASE WHEN items.completed_date = ? THEN 1 ELSE 0 END as is_completed
+     FROM order_items
+     JOIN orders ON order_items.order_id = orders.id
+     JOIN items ON order_items.item_id = items.id
+     WHERE orders.order_date = ?
+     GROUP BY items.id, items.name, items.completed_date`,
+      [dateStr, dateStr]
     );
 
     setSummary(result);
+  };
+
+  const toggleComplete = async (
+    itemId: number,
+    date: Date,
+    current: number
+  ) => {
+    const dateStr = dayjs(date).format(DATE_FORMAT_FOR_DB);
+
+    const newValue = current ? null : dateStr;
+
+    await db.runAsync(`UPDATE items SET completed_date = ? WHERE id = ?`, [
+      newValue,
+      itemId,
+    ]);
+
+    fetchSummary(date);
   };
 
   const onChangeDate = (event: any, selected?: Date) => {
@@ -63,14 +83,40 @@ export default function OrderSummaryScreen() {
     }
   };
 
-  const SummaryItem = ({ item }: { item: any }) => (
-    <View style={styles.row}>
-      <ThemedText style={styles.itemText}>🍽 {item.name}</ThemedText>
-      <View style={styles.badge}>
-        <ThemedText style={styles.badgeText}>{item.total}</ThemedText>
-      </View>
-    </View>
-  );
+  const SummaryItem = ({ item }: { item: any }) => {
+    const isCompleted = item.is_completed === 1;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.row,
+          isCompleted && { backgroundColor: "#e0e0e0" }, // light gray background
+        ]}
+        onLongPress={() => {
+          Vibration.vibrate(100);
+          toggleComplete(item.id, selectedDate, item.is_completed);
+        }}
+      >
+        <ThemedText
+          style={[
+            styles.itemText,
+            isCompleted && {
+              textDecorationLine: "line-through",
+              color: "gray",
+            },
+          ]}
+        >
+          🍽 {item.name}
+        </ThemedText>
+
+        {/* <View style={styles.rightSection}> */}
+        <View style={styles.badge}>
+          <ThemedText style={styles.badgeText}>{item.total}</ThemedText>
+        </View>
+        {/* </View> */}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>

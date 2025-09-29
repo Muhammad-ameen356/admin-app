@@ -44,6 +44,16 @@ const createTableInDB = async () => {
           FOREIGN KEY(item_id) REFERENCES items(id)
         );
       `);
+
+  // 🔹 Migration: Add column if it doesn’t exist
+  try {
+    await db.execAsync(`ALTER TABLE items ADD COLUMN completed_date TEXT;`);
+  } catch (e) {
+    // ignore "duplicate column" errors
+    if (!String(e).includes("duplicate column name")) {
+      console.error("Migration error:", e);
+    }
+  }
 };
 
 export const dropAllTables = async () => {
