@@ -6,7 +6,6 @@ import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Button,
   FlatList,
   StyleSheet,
   Text,
@@ -194,18 +193,46 @@ export default function UserCrudScreen() {
         style={styles.input}
       />
 
-      <ThemedView style={{ marginBottom: 20 }}>
-        <ThemedView>
-          <Button
-            title={editingId ? "Update User" : "Add User"}
-            onPress={handleSave}
-          />
-        </ThemedView>
-        <ThemedView>
-          {editingId !== null && (
-            <Button title="Cancel" onPress={cancelEdit} color="gray" />
-          )}
-        </ThemedView>
+      <ThemedView style={{ marginBottom: 24, gap: 8 }}>
+        <TouchableOpacity
+          onPress={handleSave}
+          style={{
+            backgroundColor: editingId ? "#f59e0b" : "#2563eb",
+            paddingVertical: 14,
+            borderRadius: 12,
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 2,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+            {editingId ? "Update User" : "Add User"}
+          </Text>
+        </TouchableOpacity>
+        {editingId !== null && (
+          <TouchableOpacity
+            onPress={cancelEdit}
+            style={{
+              backgroundColor: colorScheme === "dark" ? "#374151" : "#e5e7eb",
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: colorScheme === "dark" ? "#f3f4f6" : "#1f2937",
+                fontWeight: "600",
+                fontSize: 16,
+              }}
+            >
+              Cancel
+            </Text>
+          </TouchableOpacity>
+        )}
       </ThemedView>
       <FlatList
         data={editingId ? users : filteredUsers}
@@ -222,14 +249,18 @@ export default function UserCrudScreen() {
             </ThemedView>
             <TouchableOpacity
               onPress={() => handleEdit(item)}
-              style={styles.iconButton}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor:
+                    colorScheme === "dark"
+                      ? "rgba(37, 99, 235, 0.15)"
+                      : "rgba(37, 99, 235, 0.1)",
+                },
+              ]}
             >
               <Text style={styles.editIcon}>✏️</Text>
             </TouchableOpacity>
-            {/* Uncomment to enable delete */}
-            {/* <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconButton}>
-      <Text style={styles.deleteIcon}>🗑️</Text>
-    </TouchableOpacity> */}
           </ThemedView>
         )}
       />
@@ -240,88 +271,95 @@ export default function UserCrudScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
-      paddingTop: 18,
-      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingHorizontal: 16,
       flex: 1,
-      backgroundColor: theme === "dark" ? "#121212" : "#fff",
+      backgroundColor: theme === "dark" ? "#111827" : "#f9fafb",
     },
     title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 20,
-      color: theme === "dark" ? "#fff" : "#000",
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 24,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      letterSpacing: -0.5,
     },
     subTitle: {
       padding: 10,
       fontSize: 18,
       fontWeight: "600",
-
-      color: theme === "dark" ? "#fff" : "#000",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
     },
     input: {
       borderWidth: 1,
-      borderColor: theme === "dark" ? "#555" : "#ccc",
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 10,
-      color: theme === "dark" ? "#fff" : "#000",
-      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      padding: 14,
+      borderRadius: 12,
+      marginBottom: 12,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      fontSize: 15,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
     },
     row: {
       padding: 12,
       borderBottomWidth: 1,
-      borderColor: theme === "dark" ? "#444" : "#eee",
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
       flexDirection: "row",
       justifyContent: "space-between",
     },
     actions: { flexDirection: "row", gap: 10 },
-    edit: { color: "#007bff" },
-    delete: { color: "#d11a2a" },
+    edit: { color: "#2563eb" },
+    delete: { color: "#ef4444" },
     empty: {
       textAlign: "center",
-      color: theme === "dark" ? "#aaa" : "#888",
+      color: theme === "dark" ? "#9ca3af" : "#6b7280",
+      fontSize: 15,
+      marginTop: 20,
     },
     card: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme === "dark" ? "#1f1f1f" : "#f9f9f9",
-      paddingHorizontal: 15,
-      paddingVertical: 4,
-      borderRadius: 10,
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderRadius: 16,
       marginBottom: 12,
       borderWidth: 1,
-      borderColor: theme === "dark" ? "#333" : "#ddd",
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 3,
     },
-
     cardTitle: {
       fontSize: 17,
-      fontWeight: "bold",
-      marginBottom: 4,
-      color: theme === "dark" ? "#fff" : "#222",
+      fontWeight: "700",
+      marginBottom: 6,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      letterSpacing: -0.3,
     },
-
     cardSubTitle: {
       fontSize: 14,
-      color: theme === "dark" ? "#bbb" : "#666",
+      color: theme === "dark" ? "#9ca3af" : "#6b7280",
+      fontWeight: "500",
     },
-
     iconButton: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      marginLeft: 4,
     },
-
     editIcon: {
-      fontSize: 20,
-      color: "#007bff",
+      fontSize: 22,
+      color: "#2563eb",
     },
-
     deleteIcon: {
-      fontSize: 20,
-      color: "#d11a2a",
+      fontSize: 22,
+      color: "#ef4444",
     },
   });

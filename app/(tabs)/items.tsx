@@ -6,7 +6,6 @@ import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Button,
   FlatList,
   StyleSheet,
   Text,
@@ -172,12 +171,44 @@ export default function ItemScreen() {
       />
 
       <ThemedView style={styles.buttonRow}>
-        <Button
-          title={editingId ? "Update Item" : "Add Item"}
+        <TouchableOpacity
           onPress={handleSave}
-        />
+          style={{
+            backgroundColor: editingId ? "#f59e0b" : "#2563eb",
+            paddingVertical: 14,
+            borderRadius: 12,
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 2,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+            {editingId ? "Update Item" : "Add Item"}
+          </Text>
+        </TouchableOpacity>
         {editingId && (
-          <Button title="Cancel" color="gray" onPress={cancelEdit} />
+          <TouchableOpacity
+            onPress={cancelEdit}
+            style={{
+              backgroundColor: theme === "dark" ? "#374151" : "#e5e7eb",
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+                fontWeight: "600",
+                fontSize: 16,
+              }}
+            >
+              Cancel
+            </Text>
+          </TouchableOpacity>
         )}
       </ThemedView>
 
@@ -198,13 +229,29 @@ export default function ItemScreen() {
             </ThemedView>
             <TouchableOpacity
               onPress={() => handleEdit(item)}
-              style={styles.iconButton}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor:
+                    colorScheme === "dark"
+                      ? "rgba(37, 99, 235, 0.15)"
+                      : "rgba(37, 99, 235, 0.1)",
+                },
+              ]}
             >
               <Text style={styles.editIcon}>✏️</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDelete(item.id)}
-              style={styles.iconButton}
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor:
+                    colorScheme === "dark"
+                      ? "rgba(239, 68, 68, 0.15)"
+                      : "rgba(239, 68, 68, 0.1)",
+                },
+              ]}
             >
               <Text style={styles.deleteIcon}>🗑️</Text>
             </TouchableOpacity>
@@ -218,76 +265,83 @@ export default function ItemScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
-      paddingTop: 18,
-      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingHorizontal: 16,
       flex: 1,
-      backgroundColor: theme === "dark" ? "#121212" : "#fff",
+      backgroundColor: theme === "dark" ? "#111827" : "#f9fafb",
     },
     title: {
-      fontSize: 22,
-      fontWeight: "bold",
-      marginBottom: 20,
-      color: theme === "dark" ? "#fff" : "#000",
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 24,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      letterSpacing: -0.5,
     },
     input: {
       borderWidth: 1,
-      borderColor: theme === "dark" ? "#555" : "#ccc",
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 10,
-      color: theme === "dark" ? "#fff" : "#000",
-      backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      padding: 14,
+      borderRadius: 12,
+      marginBottom: 12,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      fontSize: 15,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
     },
     buttonRow: {
-      marginBottom: 20,
+      marginBottom: 24,
+      gap: 8,
     },
-
     emptyText: {
       textAlign: "center",
-      color: theme === "dark" ? "#aaa" : "#888",
+      color: theme === "dark" ? "#9ca3af" : "#6b7280",
+      fontSize: 15,
+      marginTop: 20,
     },
-
     card: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme === "dark" ? "#1f1f1f" : "#fafafa",
-      paddingHorizontal: 15,
-      paddingVertical: 4,
-      borderRadius: 10,
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderRadius: 16,
       marginBottom: 12,
       borderWidth: 1,
-      borderColor: theme === "dark" ? "#333" : "#ddd",
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
       elevation: 3,
     },
-
     cardTitle: {
       fontSize: 17,
-      fontWeight: "bold",
-      marginBottom: 4,
-      color: theme === "dark" ? "#fff" : "#222",
+      fontWeight: "700",
+      marginBottom: 6,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      letterSpacing: -0.3,
     },
-
     cardAmount: {
       fontSize: 15,
-      color: theme === "dark" ? "#aaa" : "#666",
+      color: theme === "dark" ? "#9ca3af" : "#6b7280",
+      fontWeight: "500",
     },
-
     iconButton: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      marginLeft: 4,
     },
-
     editIcon: {
-      fontSize: 20,
-      color: "#007bff",
+      fontSize: 22,
+      color: "#2563eb",
     },
-
     deleteIcon: {
-      fontSize: 20,
-      color: "#d11a2a",
+      fontSize: 22,
+      color: "#ef4444",
     },
   });

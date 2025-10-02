@@ -9,7 +9,6 @@ import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  Button,
   Keyboard,
   StyleSheet,
   Text,
@@ -427,11 +426,25 @@ export default function TakeOrderScreen() {
             }}
           />
 
-          <Button
-            color={editingOrderId ? "orange" : ""}
-            title={editingOrderId ? "Update Order" : "Save Order"}
+          <TouchableOpacity
             onPress={handleSaveOrder}
-          />
+            style={{
+              backgroundColor: editingOrderId ? "#f59e0b" : "#10b981",
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 2,
+              marginBottom: 8,
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>
+              {editingOrderId ? "Update Order" : "Save Order"}
+            </Text>
+          </TouchableOpacity>
           {editingOrderId && (
             <TouchableOpacity onPress={resetForm} style={styles.cancelButton}>
               <Text style={styles.cancelButtonText}>CANCEL UPDATE</Text>
@@ -536,23 +549,81 @@ export default function TakeOrderScreen() {
                     }}
                     style={styles.orderItem}
                   >
-                    <Text style={[styles.text, { fontWeight: "bold" }]}>
-                      👤 {order.userName} - {order.employeeId}
+                    <Text
+                      style={[
+                        styles.text,
+                        { fontWeight: "700", fontSize: 16, marginBottom: 8 },
+                      ]}
+                    >
+                      {order.userName}
                     </Text>
-                    <Text style={[styles.text, { fontWeight: "bold" }]}>
-                      💸 Rs {order.total_amount} (Paid: Rs
-                      {order.paid_amount})
+                    <Text
+                      style={[
+                        styles.text,
+                        { fontSize: 14, opacity: 0.7, marginBottom: 8 },
+                      ]}
+                    >
+                      Employee ID: {order.employeeId}
                     </Text>
-                    <Text style={[styles.text, { fontSize: 15 }]}>
-                      ⏰
-                      {dayjs(order.order_time, "HH:mm:ss").format("hh:mm:ss A")}
-                    </Text>
-                    <Text style={[styles.text, { fontSize: 15 }]}>
-                      📅 {order.order_date}
-                    </Text>
-                    <Text style={{ color: statusColor, fontWeight: "bold" }}>
-                      {statusText}
-                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        marginBottom: 6,
+                      }}
+                    >
+                      <Text style={[styles.text, { fontSize: 14 }]}>Total</Text>
+                      <Text style={[styles.text, { fontWeight: "600" }]}>
+                        Rs {order.total_amount}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        marginBottom: 6,
+                      }}
+                    >
+                      <Text style={[styles.text, { fontSize: 14 }]}>Paid</Text>
+                      <Text style={[styles.text, { fontWeight: "600" }]}>
+                        Rs {order.paid_amount}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        marginBottom: 10,
+                      }}
+                    >
+                      <Text
+                        style={[styles.text, { fontSize: 13, opacity: 0.7 }]}
+                      >
+                        {dayjs(order.order_time, "HH:mm:ss").format(
+                          "hh:mm:ss A"
+                        )}
+                      </Text>
+                      <Text
+                        style={[styles.text, { fontSize: 13, opacity: 0.7 }]}
+                      >
+                        {order.order_date}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        backgroundColor: statusColor,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      <Text
+                        style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}
+                      >
+                        {statusText}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })
@@ -567,123 +638,148 @@ const themedStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     safeContainer: {
       flex: 1,
-      backgroundColor: theme === "dark" ? "#121212" : "#fff",
-      padding: 18,
+      backgroundColor: theme === "dark" ? "#111827" : "#f9fafb",
+      padding: 16,
     },
     title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      color: theme === "dark" ? "#fff" : "#000",
+      fontSize: 28,
+      fontWeight: "700",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      marginBottom: 20,
+      letterSpacing: -0.5,
     },
     label: {
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: "600",
-      color: theme === "dark" ? "#eee" : "#111",
-      marginTop: 15,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      marginTop: 16,
+      marginBottom: 8,
     },
     input: {
       borderWidth: 1,
-      borderColor: theme === "dark" ? "#555" : "#ccc",
-      backgroundColor: theme === "dark" ? "#222" : "#fff",
-      color: theme === "dark" ? "#fff" : "#000",
-      padding: 10,
-      borderRadius: 6,
-      marginBottom: 10,
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      padding: 14,
+      borderRadius: 12,
+      marginBottom: 12,
+      fontSize: 15,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
     },
     dropdown: {
-      backgroundColor: theme === "dark" ? "#222" : "#fff",
-      borderColor: theme === "dark" ? "#555" : "#ccc",
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      borderRadius: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
     },
     dropdownList: {
-      backgroundColor: theme === "dark" ? "#222" : "#fff",
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
     },
-    // itemRow: {
-    //   flexDirection: "row",
-    //   alignItems: "center",
-    //   marginBottom: 10,
-    //   gap: 10,
-    // },
     addButton: {
-      backgroundColor: "#007bff",
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 4,
-      marginBottom: 10,
+      backgroundColor: "#2563eb",
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+      marginBottom: 12,
       alignSelf: "flex-start",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
     },
     addButtonText: {
       color: "#fff",
       fontWeight: "600",
+      fontSize: 15,
     },
     total: {
-      fontSize: 18,
-      fontWeight: "bold",
-      marginVertical: 10,
-      color: theme === "dark" ? "#fff" : "#000",
+      fontSize: 20,
+      fontWeight: "700",
+      marginVertical: 12,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
     },
-    remove: { fontSize: 20, color: "red" },
+    remove: { fontSize: 22, color: "#ef4444" },
     orderItem: {
-      backgroundColor: theme === "dark" ? "#1e1e1e" : "#f1f1f1",
-      padding: 10,
-      borderRadius: 6,
-      marginBottom: 8,
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      padding: 14,
+      borderRadius: 16,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 3,
     },
     text: {
-      color: theme === "dark" ? "#ddd" : "#333",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      marginBottom: 4,
     },
     itemRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 10,
+      marginBottom: 12,
     },
-
     quantityContainer: {
       flexDirection: "row",
       alignItems: "center",
       marginLeft: 8,
       borderWidth: 1,
-      borderRadius: 6,
-      borderColor: theme === "dark" ? "#555" : "#ccc",
-      backgroundColor: theme === "dark" ? "#222" : "#fff",
+      borderRadius: 10,
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      overflow: "hidden",
     },
-
     qtyButton: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
       justifyContent: "center",
       alignItems: "center",
+      backgroundColor: theme === "dark" ? "#374151" : "#f3f4f6",
     },
-
     qtyButtonText: {
       fontSize: 18,
-      fontWeight: "bold",
-      color: theme === "dark" ? "#fff" : "#000",
+      fontWeight: "700",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
     },
-
     qtyInput: {
-      width: 40,
+      width: 45,
       textAlign: "center",
-      color: theme === "dark" ? "#fff" : "#000",
-      paddingVertical: 4,
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      paddingVertical: 8,
+      fontSize: 15,
+      fontWeight: "600",
     },
     cancelButton: {
-      marginTop: 10,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      backgroundColor: "#aaa",
-      borderRadius: 4,
+      marginTop: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      borderRadius: 12,
     },
-
     cancelButtonText: {
-      color: "#fff",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
       fontWeight: "600",
       textAlign: "center",
+      fontSize: 15,
     },
     resetButton: {
       alignSelf: "flex-end",
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 6,
-      backgroundColor: "#eee",
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 10,
+      backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
+      borderWidth: 1,
+      borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
     },
   });
