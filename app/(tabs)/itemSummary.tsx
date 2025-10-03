@@ -123,7 +123,7 @@ export default function OrderSummaryScreen() {
       <ThemedText style={styles.title}>Order Summary</ThemedText>
       <TouchableOpacity onPress={() => setShowPicker(true)}>
         <ThemedText style={styles.dateLabel}>
-          📅 Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
+          Date: {dayjs(selectedDate).format(DATE_FORMAT_FOR_SHOW)}
         </ThemedText>
       </TouchableOpacity>
 
@@ -141,16 +141,8 @@ export default function OrderSummaryScreen() {
         ListEmptyComponent={
           <ThemedText style={styles.noData}>No Item Found.</ThemedText>
         }
-        showsVerticalScrollIndicator={true}
-        ItemSeparatorComponent={() => (
-          <View
-            style={{
-              height: 1,
-              backgroundColor: colorScheme === "dark" ? "#333" : "#ccc",
-              marginVertical: 4,
-            }}
-          />
-        )}
+        showsVerticalScrollIndicator={false}
+        
         keyExtractor={(item, index) => index.toString()}
         contentContainerStyle={{ paddingBottom: 20 }}
         renderItem={({ item }) => <SummaryItem item={item} />}
@@ -162,64 +154,87 @@ export default function OrderSummaryScreen() {
 const getStyles = (theme: "light" | "dark") =>
   StyleSheet.create({
     container: {
-      paddingTop: 18,
+      paddingTop: 20,
       flex: 1,
-      paddingHorizontal: 20,
-      backgroundColor: theme === "light" ? "#fff" : "#121212",
+      paddingHorizontal: 16,
+      backgroundColor: theme === "light" ? "#f9fafb" : "#111827",
     },
     title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 18,
-      color: theme === "light" ? "#000" : "#fff",
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 24,
+      color: theme === "light" ? "#1f2937" : "#f3f4f6",
+      letterSpacing: -0.5,
     },
     dateLabel: {
-      fontSize: 17,
-      color: theme === "light" ? "#000" : "#ddd",
-      marginBottom: 10,
-      fontWeight: "800",
+      fontSize: 16,
+      color: theme === "light" ? "#1f2937" : "#f3f4f6",
+      marginBottom: 16,
+      fontWeight: "600",
+      backgroundColor: theme === "light" ? "#ffffff" : "#1f2937",
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme === "light" ? "#e5e7eb" : "#374151",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
     },
     noData: {
-      marginTop: 20,
+      marginTop: 40,
       fontSize: 16,
-      color: theme === "light" ? "#333" : "#bbb",
+      color: theme === "light" ? "#6b7280" : "#9ca3af",
+      textAlign: "center",
     },
-
     row: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      paddingVertical: 6,
-      paddingHorizontal: 4,
+      paddingVertical: 5,
+      paddingHorizontal: 16,
+      backgroundColor: theme === "light" ? "#ffffff" : "#1f2937",
+      borderRadius: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme === "light" ? "#e5e7eb" : "#374151",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
     },
-
     itemText: {
       fontSize: 16,
-      fontWeight: "700",
-      color: theme === "dark" ? "#fff" : "#000",
+      fontWeight: "600",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
       flex: 1,
+      letterSpacing: -0.2,
     },
-
     quantityText: {
       fontSize: 15,
       fontWeight: "bold",
-      color: theme === "dark" ? "#fff" : "#000",
+      color: theme === "dark" ? "#f3f4f6" : "#1f2937",
       marginLeft: 10,
     },
-
     badge: {
-      backgroundColor: theme === "dark" ? "#3b82f6" : "#007bff", // blue
-      paddingHorizontal: 10,
-      paddingVertical: 2,
-      borderRadius: 50,
-      minWidth: 28,
+      backgroundColor: theme === "dark" ? "#2563eb" : "#2563eb",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+      minWidth: 36,
       alignItems: "center",
       justifyContent: "center",
+      shadowColor: "#2563eb",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 2,
     },
-
     badgeText: {
       color: "#fff",
-      fontWeight: "bold",
-      fontSize: 14,
+      fontWeight: "700",
+      fontSize: 15,
     },
   });
