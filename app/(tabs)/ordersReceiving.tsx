@@ -41,6 +41,7 @@ type Order = {
   total_amount: number;
   paid_amount: number;
 };
+type BalanceResult = { total: number | null; paid: number | null };
 
 export default function TakeOrderScreen() {
   const themeForStyle = useColorScheme() ?? "light";
@@ -63,6 +64,7 @@ export default function TakeOrderScreen() {
   const [selectedUser, setSelectedUser] = useState<number | null>(null);
   const [dropdownItems, setDropdownItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [userBalanceStatus, setUserBalanceStatus] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -87,6 +89,39 @@ export default function TakeOrderScreen() {
 
     setDropdownItems(res);
     setUsers(res);
+  };
+
+  const loadUserBalance = async (userId: number) => {
+    try {
+      const res = await db.getFirstAsync<BalanceResult>(
+        `SELECT 
+      SUM(total_amount) AS total,
+      SUM(paid_amount) AS paid
+   FROM orders
+   WHERE user_id = ?`,
+        [userId]
+      );
+
+      const total = res?.total || 0;
+      const paid = res?.paid || 0;
+      const diff = paid - total;
+
+      if (diff === 0) {
+        setUserBalanceStatus("✅ Settled");
+      } else if (diff < 0) {
+        setUserBalanceStatus(`❌ Pending: Rs ${Math.abs(diff)}`);
+      } else {
+        setUserBalanceStatus(`💰 Extra Paid: Rs ${diff}`);
+      }
+    } catch (err) {
+      console.error("Balance error:", err);
+    }
+  };
+
+  const STATUS_COLORS = {
+    PENDING: "red",
+    EXTRA: "orange",
+    CLEAR: "green",
   };
 
   const loadItems = async () => {
@@ -292,7 +327,11 @@ export default function TakeOrderScreen() {
               })),
             ]}
             setOpen={setUserDropdownOpen}
-            setValue={setSelectedUserId}
+            setValue={(callback) => {
+              const newUserId = callback(selectedUserId);
+              setSelectedUserId(newUserId);
+              if (newUserId) loadUserBalance(newUserId);
+            }}
             placeholder="Select User"
             searchable
             style={[
@@ -412,8 +451,27 @@ export default function TakeOrderScreen() {
             <Text style={styles.addButtonText}>+ Add Item</Text>
           </TouchableOpacity>
 
-          <Text style={styles.total}>Total: Rs {totalAmount}</Text>
-
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text style={styles.total}>Total: Rs {totalAmount}</Text>
+            {selectedUserId && (
+              <Text
+                style={{
+                  marginTop: 8,
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  color: userBalanceStatus.includes("Pending")
+                    ? "red"
+                    : userBalanceStatus.includes("Extra")
+                    ? "orange"
+                    : "green",
+                }}
+              >
+                {userBalanceStatus}
+              </Text>
+            )}
+          </View>
           <TextInput
             style={styles.input}
             placeholder="Paid Amount"
