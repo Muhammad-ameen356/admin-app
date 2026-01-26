@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import CustomDrawer from "@/components/CustomDrawer";
+import { AuthProvider } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -44,37 +45,38 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Drawer
-          drawerContent={(props) => <CustomDrawer {...props} />}
-          screenOptions={{
-            headerShown: true,
-            drawerStyle: {
-              backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#fff",
-            },
-            drawerActiveTintColor: colorScheme === "dark" ? "#fff" : "#000",
-            drawerInactiveTintColor: colorScheme === "dark" ? "#aaa" : "#444",
-          }}
-        >
-          <Drawer.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
-              drawerLabel: "Home",
-            }}
-          />
-
-          <Drawer.Screen
-            name="orderHistory"
-            options={{
+      <AuthProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Drawer
+            drawerContent={(props) => <CustomDrawer {...props} />}
+            screenOptions={{
               headerShown: true,
-              drawerLabel: "Order History",
-              title: "Order History",
+              drawerStyle: {
+                backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#fff",
+              },
+              drawerActiveTintColor: colorScheme === "dark" ? "#fff" : "#000",
+              drawerInactiveTintColor: colorScheme === "dark" ? "#aaa" : "#444",
             }}
-          />
-        </Drawer>
-      </GestureHandlerRootView>
+          >
+            <Drawer.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+                drawerLabel: "Home",
+              }}
+            />
 
+            <Drawer.Screen
+              name="orderHistory"
+              options={{
+                headerShown: true,
+                drawerLabel: "Order History",
+                title: "Order History",
+              }}
+            />
+          </Drawer>
+        </GestureHandlerRootView>
+      </AuthProvider>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </ThemeProvider>
   );

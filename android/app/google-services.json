@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "638317174177",
+    "project_id": "admin-app-nisum-f2f7f",
+    "storage_bucket": "admin-app-nisum-f2f7f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638317174177:android:c5e92a55d37ae2795f7fe0",
+        "android_client_info": {
+          "package_name": "com.muhammadameenh1.adminapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "638317174177-1pm295lq83pjbgp6f0olaf9bq524a828.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.muhammadameenh1.adminapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "638317174177-1ve9c4m0v1j888j2olehlmgimp3fa392.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9OTMaQySJUQfVRWz1n8e6xx497GEzay0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "638317174177-1ve9c4m0v1j888j2olehlmgimp3fa392.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
