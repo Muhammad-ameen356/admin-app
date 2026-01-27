@@ -1,10 +1,7 @@
-import { dbName } from "@/constants/DBConstants";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import { getDb } from "@/db/database";
 
 const createTableInDB = async () => {
-  let db: SQLiteDatabase = await openDatabaseAsync(dbName, {
-    useNewConnection: true,
-  });
+  let db = await getDb();
 
   await db.execAsync(`
       CREATE TABLE IF NOT EXISTS items (
@@ -57,9 +54,7 @@ const createTableInDB = async () => {
 };
 
 export const dropAllTables = async () => {
-  const db: SQLiteDatabase = await openDatabaseAsync(dbName, {
-    useNewConnection: true,
-  });
+  const db = await getDb();
 
   try {
     // Disable foreign key checks to allow dropping in any order

@@ -1,13 +1,14 @@
 import { Collapsible } from "@/components/Collapsible";
 import { ThemedText } from "@/components/ThemedText";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
-import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
+import { DATE_FORMAT_FOR_DB } from "@/constants/DBConstants";
+import { getDb } from "@/db/database";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
 import * as Clipboard from "expo-clipboard";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import { SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
@@ -21,9 +22,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-let db: SQLiteDatabase;
-
 export default function OrderHistoryScreen() {
+  const [db, setDb] = useState<SQLiteDatabase | null>(null);
+
   const initialStartDate = dayjs().startOf("month").toDate();
   const initialEndDate = dayjs().toDate();
 
@@ -38,19 +39,28 @@ export default function OrderHistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
+
       (async () => {
-        db = await openDatabaseAsync(dbName, { useNewConnection: true });
-        fetchOrders(startDate, endDate);
+        const database = await getDb();
+        if (!active) return;
+
+        setDb(database);
+
+        // 🔑 INITIAL LOAD
+        await fetchOrders(database, startDate, endDate);
       })();
+
       return () => {
+        active = false;
         setSearchQuery("");
         setStartDate(initialStartDate);
         setEndDate(initialEndDate);
       };
-    }, [])
+    }, []),
   );
 
-  const fetchOrders = async (start: Date, end: Date) => {
+  const fetchOrders = async (db: SQLiteDatabase, start: Date, end: Date) => {
     const startDateStr = dayjs(start).format(DATE_FORMAT_FOR_DB);
     const endDateStr = dayjs(end).format(DATE_FORMAT_FOR_DB);
 
@@ -73,7 +83,7 @@ export default function OrderHistoryScreen() {
       JOIN items i ON i.id = oi.item_id
       WHERE o.order_date BETWEEN ? AND ?
       ORDER BY u.id, o.id`,
-      [startDateStr, endDateStr]
+      [startDateStr, endDateStr],
     );
 
     const grouped: any = {};
@@ -119,18 +129,18 @@ export default function OrderHistoryScreen() {
 
   const onStartDateChange = (event: any, selected?: Date) => {
     setShowStartPicker(Platform.OS === "ios");
-    if (selected) {
-      setStartDate(selected);
-      fetchOrders(selected, endDate);
-    }
+    if (!selected || !db) return;
+
+    setStartDate(selected);
+    fetchOrders(db, selected, endDate);
   };
 
   const onEndDateChange = (event: any, selected?: Date) => {
     setShowEndPicker(Platform.OS === "ios");
-    if (selected) {
-      setEndDate(selected);
-      fetchOrders(startDate, selected);
-    }
+    if (!selected || !db) return;
+
+    setEndDate(selected);
+    fetchOrders(db, startDate, selected);
   };
 
   const copyUserOrders = (user: any) => {
@@ -180,17 +190,17 @@ export default function OrderHistoryScreen() {
   };
 
   const filteredOrders = orders.filter((user: any) =>
-    user.userName.toLowerCase().includes(searchQuery.toLowerCase())
+    user.userName.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const renderUser = ({ item }: { item: any }) => {
     const totalAmount = item.orders.reduce(
       (sum: number, order: any) => sum + order.total_amount,
-      0
+      0,
     );
     const totalPaid = item.orders.reduce(
       (sum: number, order: any) => sum + order.paid_amount,
-      0
+      0,
     );
 
     const diff = totalPaid - totalAmount;

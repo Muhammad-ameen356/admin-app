@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { dbName } from "@/constants/DBConstants";
+import { getDb } from "@/db/database";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import { SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -43,9 +43,8 @@ export default function ItemScreen() {
 
   useEffect(() => {
     (async () => {
-      db = await openDatabaseAsync(dbName, {
-        useNewConnection: true,
-      });
+      db = await getDb();
+
       await loadItemsFromDB();
     })();
     return () => {
@@ -78,7 +77,7 @@ export default function ItemScreen() {
       if (editingId) {
         await db.runAsync(
           "UPDATE items SET name = ?, amount = ? WHERE id = ?",
-          [name.trim(), amt, editingId]
+          [name.trim(), amt, editingId],
         );
         Alert.alert("Updated successfully");
       } else {
@@ -132,7 +131,7 @@ export default function ItemScreen() {
     const handler = setTimeout(() => {
       if (searchName.trim()) {
         const filtered = items.filter((item) =>
-          item.name.toLowerCase().includes(searchName.toLowerCase())
+          item.name.toLowerCase().includes(searchName.toLowerCase()),
         );
         setFilteredItems(filtered);
       } else {

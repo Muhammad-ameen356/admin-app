@@ -1,11 +1,12 @@
 import { ThemedText } from "@/components/ThemedText";
 import { DATE_FORMAT_FOR_SHOW } from "@/constants/constants";
-import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
+import { DATE_FORMAT_FOR_DB } from "@/constants/DBConstants";
+import { getDb } from "@/db/database";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import { SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useState } from "react";
 import {
   FlatList,
@@ -32,12 +33,11 @@ export default function OrderSummaryScreen() {
     useCallback(() => {
       (async () => {
         setSelectedDate(todayDate);
-        db = await openDatabaseAsync(dbName, {
-          useNewConnection: true,
-        });
+        db = await getDb();
+
         fetchSummary(todayDate);
       })();
-    }, [])
+    }, []),
   );
 
   const fetchSummary = async (date: Date) => {
@@ -52,7 +52,7 @@ export default function OrderSummaryScreen() {
      JOIN items ON order_items.item_id = items.id
      WHERE orders.order_date = ?
      GROUP BY items.id, items.name, items.completed_date`,
-      [dateStr, dateStr]
+      [dateStr, dateStr],
     );
 
     setSummary(result);
@@ -61,7 +61,7 @@ export default function OrderSummaryScreen() {
   const toggleComplete = async (
     itemId: number,
     date: Date,
-    current: number
+    current: number,
   ) => {
     const dateStr = dayjs(date).format(DATE_FORMAT_FOR_DB);
 

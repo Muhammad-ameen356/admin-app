@@ -1,11 +1,12 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
-import { DATE_FORMAT_FOR_DB, dbName } from "@/constants/DBConstants";
+import { DATE_FORMAT_FOR_DB } from "@/constants/DBConstants";
+import { getDb } from "@/db/database";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import { SQLiteDatabase } from "expo-sqlite";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -69,7 +70,8 @@ export default function TakeOrderScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        db = await openDatabaseAsync(dbName, { useNewConnection: true });
+        db = await getDb();
+
         await loadUsers();
         await loadItems();
         await loadOrders();
@@ -77,7 +79,7 @@ export default function TakeOrderScreen() {
       return () => {
         resetForm();
       };
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -99,7 +101,7 @@ export default function TakeOrderScreen() {
       SUM(paid_amount) AS paid
    FROM orders
    WHERE user_id = ?`,
-        [userId]
+        [userId],
       );
 
       const total = res?.total || 0;
@@ -136,7 +138,7 @@ export default function TakeOrderScreen() {
        FROM orders
        JOIN users ON users.id = orders.user_id
        WHERE orders.order_date = ?`,
-      [date]
+      [date],
     );
     setOrders(res);
   };
@@ -153,7 +155,7 @@ export default function TakeOrderScreen() {
   const handleItemChange = (
     index: number,
     field: "itemId" | "quantity",
-    value: any
+    value: any,
   ) => {
     const updated = [...orderItems];
     updated[index][field] = field === "quantity" ? parseInt(value) || 1 : value;
@@ -188,7 +190,7 @@ export default function TakeOrderScreen() {
         // UPDATE MODE
         await db.runAsync(
           `UPDATE orders SET user_id = ?, total_amount = ?, paid_amount = ? WHERE id = ?`,
-          [selectedUserId, totalAmount, paid, editingOrderId]
+          [selectedUserId, totalAmount, paid, editingOrderId],
         );
 
         await db.runAsync(`DELETE FROM order_items WHERE order_id = ?`, [
@@ -198,7 +200,7 @@ export default function TakeOrderScreen() {
         for (const entry of orderItems) {
           await db.runAsync(
             `INSERT INTO order_items (order_id, item_id, quantity) VALUES (?, ?, ?)`,
-            [editingOrderId, entry.itemId, entry.quantity]
+            [editingOrderId, entry.itemId, entry.quantity],
           );
         }
 
@@ -211,7 +213,7 @@ export default function TakeOrderScreen() {
 
         const result = await db.runAsync(
           "INSERT INTO orders (user_id, order_date, order_time, total_amount, paid_amount) VALUES (?, ?, ?, ?, ?)",
-          [selectedUserId, orderDate, orderTime, totalAmount, paid]
+          [selectedUserId, orderDate, orderTime, totalAmount, paid],
         );
 
         const orderId = result.lastInsertRowId;
@@ -219,7 +221,7 @@ export default function TakeOrderScreen() {
         for (const entry of orderItems) {
           await db.runAsync(
             `INSERT INTO order_items (order_id, item_id, quantity) VALUES (?, ?, ?)`,
-            [orderId, entry.itemId, entry.quantity]
+            [orderId, entry.itemId, entry.quantity],
           );
         }
 
@@ -237,12 +239,12 @@ export default function TakeOrderScreen() {
   const handleEditOrder = async (orderId: number) => {
     const order = await db.getFirstAsync<any>(
       `SELECT * FROM orders WHERE id = ?`,
-      [orderId]
+      [orderId],
     );
 
     const items = await db.getAllAsync<any>(
       `SELECT item_id, quantity FROM order_items WHERE order_id = ?`,
-      [orderId]
+      [orderId],
     );
 
     setSelectedUserId(order.user_id);
@@ -253,7 +255,7 @@ export default function TakeOrderScreen() {
         itemId: item.item_id,
         quantity: item.quantity,
         dropdownOpen: false,
-      }))
+      })),
     );
     setEditingOrderId(orderId);
   };
@@ -288,7 +290,7 @@ export default function TakeOrderScreen() {
           style: "destructive",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
@@ -406,7 +408,7 @@ export default function TakeOrderScreen() {
                     handleItemChange(
                       index,
                       "quantity",
-                      item.quantity > 1 ? item.quantity - 1 : 1
+                      item.quantity > 1 ? item.quantity - 1 : 1,
                     )
                   }
                   style={styles.qtyButton}
@@ -464,8 +466,8 @@ export default function TakeOrderScreen() {
                   color: userBalanceStatus.includes("Pending")
                     ? "red"
                     : userBalanceStatus.includes("Extra")
-                    ? "orange"
-                    : "green",
+                      ? "orange"
+                      : "green",
                 }}
               >
                 {userBalanceStatus}
@@ -549,7 +551,7 @@ export default function TakeOrderScreen() {
           ) : (
             orders
               .filter((order) =>
-                selectedUser ? order.employeeId === selectedUser : true
+                selectedUser ? order.employeeId === selectedUser : true,
               )
               .map((order) => {
                 const diff = order.paid_amount - order.total_amount;
@@ -557,8 +559,8 @@ export default function TakeOrderScreen() {
                   diff === 0
                     ? "✅ Settled"
                     : diff < 0
-                    ? `❌ Pending: Rs ${Math.abs(diff)}`
-                    : `💰 Extra Paid: Rs ${diff}`;
+                      ? `❌ Pending: Rs ${Math.abs(diff)}`
+                      : `💰 Extra Paid: Rs ${diff}`;
 
                 let statusColor =
                   diff === 0 ? "green" : diff < 0 ? "red" : "orange";
@@ -589,7 +591,7 @@ export default function TakeOrderScreen() {
                             onPress: () => handleEditOrder(order.id),
                           },
                         ],
-                        { cancelable: true }
+                        { cancelable: true },
                       );
                     }}
                     style={styles.orderItem}

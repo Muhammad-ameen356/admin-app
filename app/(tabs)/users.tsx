@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { dbName } from "@/constants/DBConstants";
+import { getDb } from "@/db/database";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { openDatabaseAsync, SQLiteDatabase } from "expo-sqlite";
+import { SQLiteDatabase } from "expo-sqlite";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -45,9 +45,7 @@ export default function UserCrudScreen() {
 
   useEffect(() => {
     (async () => {
-      db = await openDatabaseAsync(dbName, {
-        useNewConnection: true,
-      });
+      db = await getDb();
 
       await loadUsersFromDB();
     })();
@@ -59,7 +57,7 @@ export default function UserCrudScreen() {
   const loadUsersFromDB = async () => {
     try {
       const rows = await db.getAllAsync<User>(
-        "SELECT * FROM users ORDER BY id DESC"
+        "SELECT * FROM users ORDER BY id DESC",
       );
 
       const sorted = [...rows].sort((a, b) => a.name.localeCompare(b.name));
@@ -79,7 +77,7 @@ export default function UserCrudScreen() {
     if (!trimmedName || isNaN(empIdNum)) {
       Alert.alert(
         "Validation",
-        "Name and a valid numeric Employee ID are required."
+        "Name and a valid numeric Employee ID are required.",
       );
       return;
     }
@@ -88,13 +86,13 @@ export default function UserCrudScreen() {
       if (editingId === null) {
         await db.runAsync(
           "INSERT INTO users (name, employeeId) VALUES (?, ?)",
-          [trimmedName, empIdNum]
+          [trimmedName, empIdNum],
         );
         Alert.alert("Success", "User added.");
       } else {
         await db.runAsync(
           "UPDATE users SET name = ?, employeeId = ? WHERE id = ?",
-          [trimmedName, empIdNum, editingId]
+          [trimmedName, empIdNum, editingId],
         );
         Alert.alert("Updated", "User updated.");
       }
@@ -153,7 +151,7 @@ export default function UserCrudScreen() {
     const handler = setTimeout(() => {
       if (searchName.trim()) {
         const filtered = users.filter((item) =>
-          item.name.toLowerCase().includes(searchName.toLowerCase())
+          item.name.toLowerCase().includes(searchName.toLowerCase()),
         );
         setFilteredUsers(filtered);
       } else {

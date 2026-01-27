@@ -1,10 +1,9 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
-import { dbName } from "@/constants/DBConstants";
+import { getDb } from "@/db/database";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFocusEffect } from "@react-navigation/native";
-import { openDatabaseAsync } from "expo-sqlite";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -28,7 +27,7 @@ export default function HomeScreen() {
   const [userBalances, setUserBalances] = useState<UserBalance[]>([]);
   const [dropdownItems, setDropdownItems] = useState<any[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(
-    null
+    null,
   );
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,9 +39,7 @@ export default function HomeScreen() {
   const theme = Colors[colorScheme ?? "light"];
 
   const fetchUserBalances = async (employeeId?: number | null) => {
-    const db = await openDatabaseAsync(dbName, {
-      useNewConnection: true,
-    });
+    const db = await getDb();
 
     const condition = employeeId
       ? `WHERE o.user_id IS NOT NULL AND u.employeeId = ${employeeId}`
@@ -67,12 +64,10 @@ export default function HomeScreen() {
   };
 
   const fetchDropdownUsers = async () => {
-    const db = await openDatabaseAsync(dbName, {
-      useNewConnection: true,
-    });
+    const db = await getDb();
 
     const result = await db.getAllAsync<{ employeeId: number; name: string }>(
-      `SELECT employeeId, name FROM users ORDER BY name`
+      `SELECT employeeId, name FROM users ORDER BY name`,
     );
 
     const items = result.map((user) => ({
@@ -99,7 +94,7 @@ export default function HomeScreen() {
       return () => {
         resetFilters();
       };
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -230,8 +225,8 @@ export default function HomeScreen() {
                 {balance === 0
                   ? "✅ Settled"
                   : balance < 0
-                  ? `❌ Pending: Rs ${Math.abs(balance)}`
-                  : `💰 Extra Paid: Rs ${balance}`}
+                    ? `❌ Pending: Rs ${Math.abs(balance)}`
+                    : `💰 Extra Paid: Rs ${balance}`}
               </ThemedText>
             </ThemedView>
           );
