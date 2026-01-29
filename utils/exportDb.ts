@@ -1,5 +1,6 @@
 import { dbName } from "@/constants/DBConstants";
 import { UserType } from "@/context/AuthContext";
+import { getDb } from "@/db/database";
 import {
   GoogleSignin,
   User as GoogleSigninUser,
@@ -110,65 +111,65 @@ export const findBackupFile = async (accessToken: string) => {
   return data.files?.[0] || null;
 };
 
-export const createBackupFile = async (dbPath: string, accessToken: string) => {
-  const fileData = await FileSystem.readAsStringAsync(dbPath, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+// export const createBackupFile = async (dbPath: string, accessToken: string) => {
+//   const fileData = await FileSystem.readAsStringAsync(dbPath, {
+//     encoding: FileSystem.EncodingType.Base64,
+//   });
 
-  const metadata = {
-    name: "admin-backup.db",
-    parents: ["appDataFolder"],
-  };
+//   const metadata = {
+//     name: "admin-backup.db",
+//     parents: ["appDataFolder"],
+//   };
 
-  const boundary = "foo_bar_baz";
-  const body =
-    `--${boundary}\r\n` +
-    `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
-    `${JSON.stringify(metadata)}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: application/octet-stream\r\n` +
-    `Content-Transfer-Encoding: base64\r\n\r\n` +
-    `${fileData}\r\n` +
-    `--${boundary}--`;
+//   const boundary = "foo_bar_baz";
+//   const body =
+//     `--${boundary}\r\n` +
+//     `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+//     `${JSON.stringify(metadata)}\r\n` +
+//     `--${boundary}\r\n` +
+//     `Content-Type: application/octet-stream\r\n` +
+//     `Content-Transfer-Encoding: base64\r\n\r\n` +
+//     `${fileData}\r\n` +
+//     `--${boundary}--`;
 
-  const res = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": `multipart/related; boundary=${boundary}`,
-      },
-      body,
-    },
-  );
+//   const res = await fetch(
+//     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+//     {
+//       method: "POST",
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         "Content-Type": `multipart/related; boundary=${boundary}`,
+//       },
+//       body,
+//     },
+//   );
 
-  return await res.json();
-};
+//   return await res.json();
+// };
 
-export const updateBackupFile = async (
-  fileId: string,
-  dbPath: string,
-  accessToken: string,
-) => {
-  const fileData = await FileSystem.readAsStringAsync(dbPath, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+// export const updateBackupFile = async (
+//   fileId: string,
+//   dbPath: string,
+//   accessToken: string,
+// ) => {
+//   const fileData = await FileSystem.readAsStringAsync(dbPath, {
+//     encoding: FileSystem.EncodingType.Base64,
+//   });
 
-  const res = await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/octet-stream",
-      },
-      body: fileData,
-    },
-  );
+//   const res = await fetch(
+//     `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+//     {
+//       method: "PATCH",
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         "Content-Type": "application/octet-stream",
+//       },
+//       body: fileData,
+//     },
+//   );
 
-  return await res.json();
-};
+//   return await res.json();
+// };
 
 export const backupDbToGoogleDrive = async (): Promise<{
   result: any;
@@ -177,37 +178,69 @@ export const backupDbToGoogleDrive = async (): Promise<{
   try {
     const dbPath = `${FileSystem.documentDirectory}SQLite/${dbName}`;
 
+    // 🔒 Ensure DB is flushed (CRITICAL)
+    const db = await getDb();
+    await db.execAsync(`
+      PRAGMA journal_mode=DELETE;
+      PRAGMA wal_checkpoint(FULL);
+    `);
+
     const { accessToken, user } = await signInNative();
 
-    // coerce null email to empty string
     const safeUser: UserType = {
       name: user.name ?? null,
       email: user.email ?? "",
       photo: user.photo ?? null,
     };
 
+    // 1️⃣ Check if backup already exists
     const existingFile = await findBackupFile(accessToken);
 
-    let result;
-    if (existingFile) {
-      result = await updateBackupFile(existingFile.id, dbPath, accessToken);
+    let uploadUrl: string;
+    let method: "POST" | "PATCH";
+
+    if (existingFile?.id) {
+      // Update existing
+      uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`;
+      method = "PATCH";
     } else {
-      result = await createBackupFile(dbPath, accessToken);
+      // Create new
+      const metaRes = await fetch("https://www.googleapis.com/drive/v3/files", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "admin-backup.db",
+          parents: ["appDataFolder"],
+        }),
+      });
+
+      const meta = await metaRes.json();
+      if (!meta.id) throw new Error("Failed to create Drive file");
+
+      uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${meta.id}?uploadType=media`;
+      method = "PATCH";
     }
 
-    if (!result || result.error) {
-      throw new Error(result?.error?.message || "Google Drive backup failed");
+    // 2️⃣ Upload RAW FILE (NO BASE64)
+    const uploadResult = await FileSystem.uploadAsync(uploadUrl, dbPath, {
+      httpMethod: method,
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/x-sqlite3",
+      },
+    });
+
+    if (uploadResult.status !== 200) {
+      throw new Error("Google Drive upload failed");
     }
 
-    return { result, user: safeUser };
+    return { result: uploadResult, user: safeUser };
   } catch (err: any) {
     console.error("Backup error:", err);
-
-    // Normalize error message
-    if (err?.message) {
-      throw new Error(err.message);
-    }
-
-    throw new Error("Unexpected error during backup");
+    throw new Error(err?.message || "Backup failed");
   }
 };

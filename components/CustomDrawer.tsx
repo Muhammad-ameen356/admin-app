@@ -1,7 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { backupDbToGoogleDrive } from "@/utils/exportDb";
-import { importDb } from "@/utils/importDb";
+import { backupDbToGoogleDrive, exportDb } from "@/utils/exportDb";
+import { importDb, importDbFromGoogleDrive } from "@/utils/importDb";
 import { toggleColorScheme } from "@/utils/toggleColorScheme";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
@@ -19,7 +19,7 @@ export default function CustomDrawer(props: any) {
   const backgroundColor = colorScheme === "dark" ? "#1e1e1e" : "#fff";
   const textColor = colorScheme === "dark" ? "#fff" : "#000";
 
-  const handleExport = async () => {
+  const handleDriveExport = async () => {
     setLoading(true);
     try {
       const { user } = await backupDbToGoogleDrive();
@@ -32,6 +32,24 @@ export default function CustomDrawer(props: any) {
     } catch (err) {
       console.log(err, "err");
       Alert.alert("Error", `${err || "Failed to export database."}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDriveImport = async () => {
+    setLoading(true);
+    try {
+      const { user } = await importDbFromGoogleDrive();
+      login(user); // <-- updates context
+
+      Alert.alert(
+        "Import successful",
+        "Database restored successfully.\nPlease restart the app.",
+      );
+    } catch (err) {
+      console.log(err, "err");
+      Alert.alert("Error", `${err || "Failed to Import database."}`);
     } finally {
       setLoading(false);
     }
@@ -108,23 +126,43 @@ export default function CustomDrawer(props: any) {
       />
 
       <DrawerItem
-        label={user ? "Export Database" : "Signin To Export Database"}
+        label={user ? "Backup" : "Signin To Backup"}
         labelStyle={{ color: textColor }}
         icon={({ size }) => (
           <Ionicons name="cloud-upload-outline" size={size} color={textColor} />
         )}
-        onPress={handleExport}
+        onPress={() => {
+          if (!loading) handleDriveExport(); // ignore if loading
+        }}
+      />
+
+      {!user && (
+        <DrawerItem
+          label={
+            user ? "Database Already Imported" : "Signin To Import Backup DB"
+          }
+          labelStyle={{ color: textColor }}
+          icon={({ size }) => (
+            <Ionicons name="cloud-download" size={size} color={textColor} />
+          )}
+          onPress={handleDriveImport}
+        />
+      )}
+
+      <DrawerItem
+        label="Share Local Database"
+        labelStyle={{ color: textColor }}
+        icon={({ size }) => (
+          <Ionicons name="cloud-upload-outline" size={size} color={textColor} />
+        )}
+        onPress={exportDb}
       />
 
       <DrawerItem
-        label="Import Database"
+        label="Import Local Database"
         labelStyle={{ color: textColor }}
         icon={({ size }) => (
-          <Ionicons
-            name="cloud-download-outline"
-            size={size}
-            color={textColor}
-          />
+          <Ionicons name="cloud-download" size={size} color={textColor} />
         )}
         onPress={handleImport}
       />
