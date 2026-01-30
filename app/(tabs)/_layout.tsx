@@ -4,7 +4,9 @@ import React, { useEffect } from "react";
 import { Platform, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { DrawerActions } from "@react-navigation/native";
 import { scheduleWeeklyBackupReminder } from "../../utils/notification";
@@ -12,6 +14,7 @@ import { scheduleWeeklyBackupReminder } from "../../utils/notification";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const themeColors = Colors[colorScheme ?? "light"];
+  const { loading: authContextLoading } = useAuth(); // reactive user state
 
   useEffect(() => {
     scheduleWeeklyBackupReminder();
@@ -126,6 +129,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      <LoadingOverlay visible={authContextLoading} />
     </SafeAreaView>
   );
 }

@@ -26,6 +26,7 @@ export type SignInResult = {
     photo: string | null;
   };
 };
+const MIN_DB_SIZE_BYTES = 25 * 1024; // 50 KB – adjust if needed
 
 export const exportDb = async () => {
   const dbUri = `${FileSystem.documentDirectory}SQLite/${dbName}`;
@@ -42,6 +43,37 @@ export const exportDb = async () => {
     }
   } catch (error) {
     console.error("Export failed:", error);
+  }
+};
+
+const validateDbFile = async (dbPath: string) => {
+  const info = await FileSystem.getInfoAsync(dbPath);
+
+  if (!info.exists) {
+    throw new Error("Local database not found");
+  }
+
+  if (!info.size || info.size < MIN_DB_SIZE_BYTES) {
+    throw new Error(
+      "Database appears empty. Backup is blocked to prevent data loss.",
+    );
+  }
+};
+
+const validateDbContent = async () => {
+  const db = await getDb();
+
+  // 👇 adjust table names to YOUR schema
+  const tablesToCheck = ["users", "orders"];
+
+  for (const table of tablesToCheck) {
+    const res = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM ${table}`,
+    );
+
+    if (!res || res.count === 0) {
+      throw new Error(`Backup blocked: "${table}" table has no data`);
+    }
   }
 };
 
@@ -178,7 +210,13 @@ export const backupDbToGoogleDrive = async (): Promise<{
   try {
     const dbPath = `${FileSystem.documentDirectory}SQLite/${dbName}`;
 
-    // 🔒 Ensure DB is flushed (CRITICAL)
+    // 🛑 2️⃣ CONTENT SAFETY CHECK
+    await validateDbContent();
+
+    // 🛑 1️⃣ FILE SAFETY CHECK
+    await validateDbFile(dbPath);
+
+    // 🔒 3️⃣ ENSURE SQLITE IS FLUSHED
     const db = await getDb();
     await db.execAsync(`
       PRAGMA journal_mode=DELETE;

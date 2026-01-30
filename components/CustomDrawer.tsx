@@ -1,12 +1,18 @@
 import { useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { checkBackupAndAlert, saveLastBackupTime } from "@/utils/asyncStorage";
 import { backupDbToGoogleDrive, exportDb } from "@/utils/exportDb";
 import { importDb, importDbFromGoogleDrive } from "@/utils/importDb";
+import {
+  notifyBackupFailed,
+  notifyBackupStarted,
+  notifyBackupSuccess,
+} from "@/utils/notification";
 import { toggleColorScheme } from "@/utils/toggleColorScheme";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, Text, View } from "react-native";
 import { ThemedText } from "./ThemedText";
 
@@ -22,6 +28,8 @@ export default function CustomDrawer(props: any) {
   const handleDriveExport = async () => {
     setLoading(true);
     try {
+      await notifyBackupStarted();
+
       const { user } = await backupDbToGoogleDrive();
       login(user); // <-- updates context
 
@@ -29,13 +37,25 @@ export default function CustomDrawer(props: any) {
         "Backup Successful",
         "Your database has been safely backed up to Google Drive.",
       );
+      await saveLastBackupTime();
+      await notifyBackupSuccess();
     } catch (err) {
       console.log(err, "err");
       Alert.alert("Error", `${err || "Failed to export database."}`);
+      await notifyBackupFailed();
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const abc = async () => {
+      checkBackupAndAlert(async () => {
+        await handleDriveExport();
+      });
+    };
+    abc();
+  }, []);
 
   const handleDriveImport = async () => {
     setLoading(true);
@@ -145,7 +165,9 @@ export default function CustomDrawer(props: any) {
           icon={({ size }) => (
             <Ionicons name="cloud-download" size={size} color={textColor} />
           )}
-          onPress={handleDriveImport}
+          onPress={() => {
+            if (!loading) handleDriveImport(); // ignore if loading
+          }}
         />
       )}
 
@@ -193,7 +215,19 @@ export default function CustomDrawer(props: any) {
             />
           )}
           onPress={() => {
-            if (!loading) logout(); // ignore if loading
+            if (loading) return;
+
+            Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Logout",
+                style: "destructive",
+                onPress: () => logout(),
+              },
+            ]);
           }}
         />
       )}

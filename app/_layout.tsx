@@ -10,6 +10,10 @@ import "react-native-reanimated";
 import CustomDrawer from "@/components/CustomDrawer";
 import { AuthProvider } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import {
+  scheduleDailyBackupReminder,
+  setupBackupNotifications,
+} from "@/utils/notification";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { Drawer } from "expo-router/drawer";
@@ -26,6 +30,14 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  useEffect(() => {
+    setupBackupNotifications();
+  }, []);
+
+  useEffect(() => {
+    scheduleDailyBackupReminder();
+  }, []);
 
   useEffect(() => {
     const createTable = async () => {
